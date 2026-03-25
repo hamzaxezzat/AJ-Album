@@ -175,7 +175,7 @@ export function parsedSlideToSlide(parsed: ParsedSlide, albumTheme: AlbumTheme):
       {
         id: nanoid(),
         type: 'main_title',
-        position: { x: 0.04, y: 0.60, width: 0.92, height: 0.12 },
+        position: { x: 0.05, y: 0.06, width: 0.90, height: 0.14 },
         zIndex: 10,
         visible: true,
         typographyTokenRef: 'heading-l',
@@ -184,7 +184,7 @@ export function parsedSlideToSlide(parsed: ParsedSlide, albumTheme: AlbumTheme):
       {
         id: nanoid(),
         type: 'body_paragraph',
-        position: { x: 0.04, y: 0.73, width: 0.92, height: 0.17 },
+        position: { x: 0.05, y: 0.22, width: 0.90, height: 0.55 },
         zIndex: 10,
         visible: true,
         typographyTokenRef: 'body-m',
