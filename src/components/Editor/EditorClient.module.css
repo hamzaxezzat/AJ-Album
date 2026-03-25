@@ -96,9 +96,9 @@
   overflow: hidden;
 }
 
-/* Slide strip */
+/* Slide strip — wider to fit portrait thumbnails */
 .slideStrip {
-  width: 200px;
+  width: 220px;
   background: #161b22;
   border-left: 1px solid #21262d;
   display: flex;
@@ -428,7 +428,7 @@
   border-radius: 5px;
   overflow: hidden;
   border: 1px solid #30363d;
-  aspect-ratio: 1350 / 1080;
+  aspect-ratio: 1080 / 1350;
 }
 
 .imagePreviewImg {

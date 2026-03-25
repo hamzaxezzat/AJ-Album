@@ -17,15 +17,19 @@ import styles from './EditorClient.module.css';
 
 const channelProfile = ajMainRaw as unknown as ChannelProfile;
 
-// Canvas display scale: 720px / 1350px = ~0.533
-const CANVAS_SCALE = 720 / 1350;
-const CANVAS_DISPLAY_WIDTH = 720;
-const CANVAS_DISPLAY_HEIGHT = Math.round(1080 * CANVAS_SCALE); // ~575
+// Canvas dimensions: 1080 × 1350 (portrait 4:5)
+const CANVAS_W = 1080;
+const CANVAS_H = 1350;
 
-// Thumbnail scale: 148px / 1350px ≈ 0.1096
+// Canvas display scale: 540px / 1080px = 0.5
+const CANVAS_SCALE = 540 / CANVAS_W;
+const CANVAS_DISPLAY_WIDTH = 540;
+const CANVAS_DISPLAY_HEIGHT = Math.round(CANVAS_H * CANVAS_SCALE); // 675
+
+// Thumbnail scale: 148px / 1080px ≈ 0.137
 const THUMB_WIDTH = 148;
-const THUMB_SCALE = THUMB_WIDTH / 1350;
-const THUMB_HEIGHT = Math.round(1080 * THUMB_SCALE);
+const THUMB_SCALE = THUMB_WIDTH / CANVAS_W;
+const THUMB_HEIGHT = Math.round(CANVAS_H * THUMB_SCALE); // ~185
 
 const BANNER_OPTIONS: { value: BannerPosition; label: string }[] = [
   { value: 'top', label: 'أعلى' },
@@ -121,8 +125,8 @@ function SlideThumbnail({ slide, album }: SlideThumbnailProps) {
     >
       <div
         style={{
-          width: 1350,
-          height: 1080,
+          width: CANVAS_W,
+          height: CANVAS_H,
           transform: `scale(${THUMB_SCALE})`,
           transformOrigin: 'top left',
           pointerEvents: 'none',
@@ -412,7 +416,7 @@ export function EditorClient({ albumId }: { albumId: string }) {
       if (!selectedSlide) return;
       updateSlide(selectedSlide.id, (slide) => {
         slide.image = {
-          asset: { id: slide.id, url: dataUrl, mimeType: 'image/jpeg', width: 1350, height: 1080 },
+          asset: { id: slide.id, url: dataUrl, mimeType: 'image/jpeg', width: 1080, height: 1350 },
           rect: { x: 0, y: 0, width: 1, height: 1 },
           objectFit: 'cover',
           focalPoint: { x: 0.5, y: 0.5 },
@@ -554,8 +558,8 @@ export function EditorClient({ albumId }: { albumId: string }) {
               >
                 <div
                   style={{
-                    width: 1350,
-                    height: 1080,
+                    width: CANVAS_W,
+                    height: CANVAS_H,
                     transform: `scale(${CANVAS_SCALE})`,
                     transformOrigin: 'top left',
                   }}
@@ -568,7 +572,7 @@ export function EditorClient({ albumId }: { albumId: string }) {
                 </div>
               </div>
               <div className={styles.canvasLabel} dir="rtl" lang="ar">
-                شريحة {selectedSlide.number} — {1350} × {1080}
+                شريحة {selectedSlide.number} — {CANVAS_W} × {CANVAS_H}
               </div>
             </div>
           ) : (

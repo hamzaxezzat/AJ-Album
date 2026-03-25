@@ -33,7 +33,7 @@ export interface ColorOption {
 export type TypographyToken = {
   fontFamily: string;
   fontWeight: number;
-  fontSize: number;        // canvas units (px at 1350×1080)
+  fontSize: number;        // canvas units (px at 1080×1350)
   lineHeight: number;      // multiplier
   letterSpacing: number;   // em units
   textAlign: 'right' | 'left' | 'center';
@@ -141,8 +141,8 @@ export interface ChannelProfile {
 // ─── Album & Theme ───────────────────────────────────────────
 
 export interface CanvasConfig {
-  width: number;    // default: 1350
-  height: number;   // default: 1080
+  width: number;    // default: 1080
+  height: number;   // default: 1350
   presetName: string;
 }
 

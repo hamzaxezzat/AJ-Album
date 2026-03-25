@@ -101,7 +101,7 @@ const baseAlbumTheme: AlbumTheme = {
   mode: 'production',
 };
 
-const defaultCanvas = { width: 1350, height: 1080, presetName: 'editorial-landscape-5:4' };
+const defaultCanvas = { width: 1080, height: 1350, presetName: 'editorial-portrait-4:5' };
 
 // ─── Tests ───────────────────────────────────────────────────
 
@@ -222,8 +222,8 @@ describe('resolveTokens', () => {
 
   it('canvas dimensions come from canvasConfig, not hardcoded', () => {
     const tokens1350 = resolveTokens({ channelProfile: mockChannelProfile, canvasConfig: defaultCanvas, albumTheme: baseAlbumTheme });
-    expect(tokens1350.canvasWidth).toBe(1350);
-    expect(tokens1350.canvasHeight).toBe(1080);
+    expect(tokens1350.canvasWidth).toBe(1080);
+    expect(tokens1350.canvasHeight).toBe(1350);
 
     // Verify it reads from config, not hardcoded constants
     const squareCanvas = { width: 1080, height: 1080, presetName: 'square' };
@@ -262,7 +262,7 @@ describe('resolveTokens', () => {
 });
 
 describe('tokensToCssVars', () => {
-  it('returns --canvas-width: 1350px', () => {
+  it('returns --canvas-width: 1080px', () => {
     const ctx: TokenResolutionContext = {
       channelProfile: mockChannelProfile,
       canvasConfig: defaultCanvas,
@@ -270,10 +270,10 @@ describe('tokensToCssVars', () => {
     };
     const tokens = resolveTokens(ctx);
     const cssVars = tokensToCssVars(tokens);
-    expect(cssVars['--canvas-width']).toBe('1350px');
+    expect(cssVars['--canvas-width']).toBe('1080px');
   });
 
-  it('returns --canvas-height: 1080px', () => {
+  it('returns --canvas-height: 1350px', () => {
     const ctx: TokenResolutionContext = {
       channelProfile: mockChannelProfile,
       canvasConfig: defaultCanvas,
@@ -281,7 +281,7 @@ describe('tokensToCssVars', () => {
     };
     const tokens = resolveTokens(ctx);
     const cssVars = tokensToCssVars(tokens);
-    expect(cssVars['--canvas-height']).toBe('1080px');
+    expect(cssVars['--canvas-height']).toBe('1350px');
   });
 
   it('maps accentPrimary to --accent-primary', () => {

@@ -67,7 +67,7 @@ export function NewAlbumWizard() {
       title: parsed.albumTitle || 'ألبوم جديد',
       channelProfileId: channelProfile.id,
       theme,
-      canvasDimensions: { width: 1350, height: 1080, presetName: 'editorial-landscape-5:4' },
+      canvasDimensions: { width: 1080, height: 1350, presetName: 'editorial-portrait-4:5' },
       slides,
       assets: [],
       scriptSource: scriptText,
