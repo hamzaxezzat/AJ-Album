@@ -7,6 +7,9 @@ interface DocumentState {
   album: Album | null;
   setAlbum: (album: Album) => void;
   updateSlide: (slideId: string, updater: (slide: Slide) => void) => void;
+  addSlide: (slide: Slide, afterIndex?: number) => void;
+  deleteSlide: (slideId: string) => void;
+  duplicateSlide: (slideId: string) => Slide | null;
   reorderSlides: (fromIndex: number, toIndex: number) => void;
   saveToLocalStorage: () => void;
   loadFromLocalStorage: (albumId: string) => boolean;
@@ -32,6 +35,46 @@ export const useDocumentStore = create<DocumentState>()(
         if (slide) updater(slide);
       });
       get().saveToLocalStorage();
+    },
+
+    addSlide: (slide, afterIndex) => {
+      set((state) => {
+        if (!state.album) return;
+        const idx = afterIndex !== undefined ? afterIndex + 1 : state.album.slides.length;
+        state.album.slides.splice(idx, 0, slide);
+        // Renumber all slides
+        state.album.slides.forEach((s, i) => { s.number = i + 1; });
+      });
+      get().saveToLocalStorage();
+    },
+
+    deleteSlide: (slideId) => {
+      set((state) => {
+        if (!state.album) return;
+        state.album.slides = state.album.slides.filter(s => s.id !== slideId);
+        state.album.slides.forEach((s, i) => { s.number = i + 1; });
+      });
+      get().saveToLocalStorage();
+    },
+
+    duplicateSlide: (slideId) => {
+      let newSlide: Slide | null = null;
+      set((state) => {
+        if (!state.album) return;
+        const idx = state.album.slides.findIndex(s => s.id === slideId);
+        if (idx === -1) return;
+        const src = state.album.slides[idx];
+        // Deep clone via JSON round-trip, assign new id
+        const clone = JSON.parse(JSON.stringify(src)) as Slide;
+        clone.id = Math.random().toString(36).slice(2);
+        clone.metadata.createdAt = new Date().toISOString();
+        clone.metadata.updatedAt = new Date().toISOString();
+        state.album.slides.splice(idx + 1, 0, clone);
+        state.album.slides.forEach((s, i) => { s.number = i + 1; });
+        newSlide = clone;
+      });
+      get().saveToLocalStorage();
+      return newSlide;
     },
 
     reorderSlides: (fromIndex, toIndex) => {

@@ -128,16 +128,11 @@
 /* Strip item */
 .stripItem {
   width: 100%;
-  background: none;
-  border: none;
   border-left: 3px solid transparent;
-  padding: 8px 10px;
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  cursor: pointer;
+  flex-direction: column;
+  gap: 0;
   transition: background 0.1s, border-color 0.15s;
-  direction: rtl;
 }
 
 .stripItem:hover {
@@ -147,6 +142,84 @@
 .stripItemSelected {
   background: #1c2128;
   border-left-color: #D32F2F;
+}
+
+.stripClickable {
+  background: none;
+  border: none;
+  padding: 8px 10px 4px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+  width: 100%;
+  direction: rtl;
+}
+
+.stripActions {
+  display: none;
+  padding: 0 10px 6px;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.stripItem:hover .stripActions {
+  display: flex;
+}
+
+.stripActionBtn {
+  background: #21262d;
+  border: 1px solid #30363d;
+  color: #7d8590;
+  border-radius: 3px;
+  font-size: 12px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.1s;
+  flex-shrink: 0;
+}
+
+.stripActionBtn:hover {
+  background: #2d333b;
+  color: #e6edf3;
+  border-color: #444c56;
+}
+
+.stripActionDelete:hover {
+  background: #3d1a1a;
+  color: #f47067;
+  border-color: #8b2e2e;
+}
+
+/* Strip footer — add slide button */
+.stripFooter {
+  padding: 8px 10px;
+  border-top: 1px solid #21262d;
+  flex-shrink: 0;
+}
+
+.addSlideBtn {
+  width: 100%;
+  background: none;
+  border: 1px dashed #30363d;
+  color: #7d8590;
+  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  font-size: 12px;
+  padding: 7px 0;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s;
+  direction: rtl;
+}
+
+.addSlideBtn:hover {
+  border-color: #D32F2F;
+  color: #e6edf3;
+  background: #1f1010;
 }
 
 .stripNumber {
@@ -169,58 +242,25 @@
   color: #fff;
 }
 
-/* Strip thumbnail */
+/* Strip thumbnail — real SlideRenderer at small scale */
 .stripThumb {
-  flex: 1;
-  aspect-ratio: 1350 / 1080;
-  background: #1a1f27;
   border-radius: 3px;
-  position: relative;
   overflow: hidden;
   border: 1px solid #21262d;
-  min-width: 0;
+  flex-shrink: 0;
+  position: relative;
 }
 
 .stripItemSelected .stripThumb {
   border-color: #D32F2F;
 }
 
-.stripThumbBanner {
-  position: absolute;
-  bottom: 14%;
-  left: 0;
-  right: 0;
-  height: 10%;
-  background: #D32F2F;
-  opacity: 0.7;
-}
-
-.stripThumbContent {
-  position: absolute;
-  bottom: 25%;
-  right: 6%;
-  left: 6%;
-}
-
-.stripThumbTitle {
-  font-size: 5px;
-  font-weight: 700;
-  color: #8b949e;
-  font-family: 'Cairo', sans-serif;
-  direction: rtl;
-  display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.stripThumbFooter {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 7%;
-  background: rgba(255,255,255,0.9);
+.thumbPlaceholder {
+  width: 148px;
+  height: 118px;
+  background: #1a1f27;
+  border-radius: 3px;
+  border: 1px solid #21262d;
 }
 
 /* Canvas area */
@@ -359,6 +399,63 @@
 
 .propInput::placeholder {
   color: #484f58;
+}
+
+/* Image upload */
+.imageUploadBtn {
+  width: 100%;
+  background: #0D1117;
+  border: 1px dashed #30363d;
+  color: #7d8590;
+  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  font-size: 13px;
+  padding: 14px 0;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s;
+  direction: rtl;
+  text-align: center;
+}
+
+.imageUploadBtn:hover {
+  border-color: #D32F2F;
+  color: #e6edf3;
+  background: #1f1010;
+}
+
+.imagePreview {
+  position: relative;
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid #30363d;
+  aspect-ratio: 1350 / 1080;
+}
+
+.imagePreviewImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.imageReplaceBtn {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  background: rgba(0,0,0,0.7);
+  color: #e6edf3;
+  border: 1px solid #444c56;
+  border-radius: 4px;
+  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  font-size: 11px;
+  padding: 4px 10px;
+  cursor: pointer;
+  direction: rtl;
+  transition: background 0.15s;
+}
+
+.imageReplaceBtn:hover {
+  background: rgba(0,0,0,0.9);
 }
 
 .bannerPicker {

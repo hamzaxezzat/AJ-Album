@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import Link from 'next/link';
 import type {
   ChannelProfile,
@@ -21,6 +21,11 @@ const channelProfile = ajMainRaw as unknown as ChannelProfile;
 const CANVAS_SCALE = 720 / 1350;
 const CANVAS_DISPLAY_WIDTH = 720;
 const CANVAS_DISPLAY_HEIGHT = Math.round(1080 * CANVAS_SCALE); // ~575
+
+// Thumbnail scale: 148px / 1350px ≈ 0.1096
+const THUMB_WIDTH = 148;
+const THUMB_SCALE = THUMB_WIDTH / 1350;
+const THUMB_HEIGHT = Math.round(1080 * THUMB_SCALE);
 
 const BANNER_OPTIONS: { value: BannerPosition; label: string }[] = [
   { value: 'top', label: 'أعلى' },
@@ -69,37 +74,107 @@ function plainToRichText(text: string): RichTextContent {
   };
 }
 
-interface SlideStripItemProps {
-  slide: Slide;
-  isSelected: boolean;
-  onClick: () => void;
+function makeBlankSlide(number: number): Slide {
+  const id = Math.random().toString(36).slice(2);
+  const now = new Date().toISOString();
+  return {
+    id,
+    number,
+    role: 'inner',
+    archetypeId: 'standard_title_body',
+    blocks: [
+      {
+        id: `${id}-title`,
+        type: 'main_title',
+        position: { x: 0.05, y: 0.1, width: 0.9, height: 0.2 },
+        zIndex: 2,
+        visible: true,
+        content: plainToRichText('عنوان جديد'),
+      } as MainTitleBlock,
+      {
+        id: `${id}-body`,
+        type: 'body_paragraph',
+        position: { x: 0.05, y: 0.35, width: 0.9, height: 0.5 },
+        zIndex: 2,
+        visible: true,
+        content: plainToRichText(''),
+      } as BodyParagraphBlock,
+    ],
+    banner: { position: 'bottom', heightNormalized: 0.12, backgroundColor: '#D32F2F', textColor: '#fff', paddingNormalized: 0.02, overlap: 'none', family: 'classic-main' },
+    metadata: { createdAt: now, updatedAt: now },
+  };
 }
 
-function SlideStripItem({ slide, isSelected, onClick }: SlideStripItemProps) {
-  const titleBlock = slide.blocks.find((b) => b.type === 'main_title') as
-    | MainTitleBlock
-    | undefined;
-  const titleText = titleBlock ? richTextToPlain(titleBlock.content) : '';
+// ─── Slide Thumbnail ────────────────────────────────────────────────────────
 
+interface SlideThumbnailProps {
+  slide: Slide;
+  album: ReturnType<typeof useDocumentStore.getState>['album'];
+}
+
+function SlideThumbnail({ slide, album }: SlideThumbnailProps) {
+  if (!album) return <div className={styles.thumbPlaceholder} />;
   return (
-    <button
-      className={`${styles.stripItem} ${isSelected ? styles.stripItemSelected : ''}`}
-      onClick={onClick}
-      type="button"
+    <div
+      className={styles.stripThumb}
+      style={{ width: THUMB_WIDTH, height: THUMB_HEIGHT }}
     >
-      <span className={styles.stripNumber}>{slide.number}</span>
-      <div className={styles.stripThumb}>
-        <div className={styles.stripThumbBanner} />
-        <div className={styles.stripThumbContent}>
-          <span className={styles.stripThumbTitle} dir="rtl" lang="ar">
-            {titleText.slice(0, 28) || '(بدون عنوان)'}
-          </span>
-        </div>
-        <div className={styles.stripThumbFooter} />
+      <div
+        style={{
+          width: 1350,
+          height: 1080,
+          transform: `scale(${THUMB_SCALE})`,
+          transformOrigin: 'top left',
+          pointerEvents: 'none',
+        }}
+      >
+        <SlideRenderer
+          slide={slide}
+          album={album}
+          channelProfile={channelProfile}
+        />
       </div>
-    </button>
+    </div>
   );
 }
+
+// ─── Slide Strip Item ────────────────────────────────────────────────────────
+
+interface SlideStripItemProps {
+  slide: Slide;
+  album: ReturnType<typeof useDocumentStore.getState>['album'];
+  isSelected: boolean;
+  onClick: () => void;
+  onDelete: () => void;
+  onDuplicate: () => void;
+}
+
+function SlideStripItem({ slide, album, isSelected, onClick, onDelete, onDuplicate }: SlideStripItemProps) {
+  return (
+    <div className={`${styles.stripItem} ${isSelected ? styles.stripItemSelected : ''}`}>
+      <button className={styles.stripClickable} onClick={onClick} type="button">
+        <span className={styles.stripNumber}>{slide.number}</span>
+        <SlideThumbnail slide={slide} album={album} />
+      </button>
+      <div className={styles.stripActions}>
+        <button
+          className={styles.stripActionBtn}
+          onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
+          type="button"
+          title="تكرار"
+        >⧉</button>
+        <button
+          className={`${styles.stripActionBtn} ${styles.stripActionDelete}`}
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          type="button"
+          title="حذف"
+        >×</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Properties Panel ────────────────────────────────────────────────────────
 
 interface PropertiesPanelProps {
   slide: Slide;
@@ -107,6 +182,7 @@ interface PropertiesPanelProps {
   onUpdateBody: (text: string) => void;
   onUpdateBanner: (pos: BannerPosition) => void;
   onUpdateSource: (text: string) => void;
+  onUploadImage: (dataUrl: string) => void;
 }
 
 function PropertiesPanel({
@@ -115,7 +191,9 @@ function PropertiesPanel({
   onUpdateBody,
   onUpdateBanner,
   onUpdateSource,
+  onUploadImage,
 }: PropertiesPanelProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const titleBlock = slide.blocks.find((b) => b.type === 'main_title') as
     | MainTitleBlock
     | undefined;
@@ -127,6 +205,20 @@ function PropertiesPanel({
   const bodyText = bodyBlock ? richTextToPlain(bodyBlock.content) : '';
   const sourceText = slide.source?.text ?? '';
   const bannerPos = slide.banner?.position ?? 'none';
+  const imageUrl = slide.image?.asset?.url ?? null;
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const result = ev.target?.result;
+      if (typeof result === 'string') onUploadImage(result);
+    };
+    reader.readAsDataURL(file);
+    // Reset so same file can be re-uploaded
+    e.target.value = '';
+  }
 
   return (
     <div className={styles.propertiesPanel}>
@@ -135,6 +227,39 @@ function PropertiesPanel({
         <span className={styles.archetypeChip}>
           {ARCHETYPE_LABELS[slide.archetypeId] ?? slide.archetypeId}
         </span>
+      </div>
+
+      {/* Image */}
+      <div className={styles.propSection}>
+        <label className={styles.propLabel}>الصورة</label>
+        {imageUrl ? (
+          <div className={styles.imagePreview}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={imageUrl} alt="" className={styles.imagePreviewImg} />
+            <button
+              type="button"
+              className={styles.imageReplaceBtn}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              استبدال
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className={styles.imageUploadBtn}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            + رفع صورة
+          </button>
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
       </div>
 
       <div className={styles.propSection}>
@@ -195,17 +320,20 @@ function PropertiesPanel({
   );
 }
 
+// ─── Editor Client ────────────────────────────────────────────────────────────
+
 export function EditorClient({ albumId }: { albumId: string }) {
   const album = useDocumentStore((s) => s.album);
   const loadFromLocalStorage = useDocumentStore((s) => s.loadFromLocalStorage);
   const updateSlide = useDocumentStore((s) => s.updateSlide);
+  const addSlide = useDocumentStore((s) => s.addSlide);
+  const deleteSlide = useDocumentStore((s) => s.deleteSlide);
+  const duplicateSlide = useDocumentStore((s) => s.duplicateSlide);
   const selectedSlideId = useEditorUIStore((s) => s.selectedSlideId);
   const setSelectedSlide = useEditorUIStore((s) => s.setSelectedSlide);
 
-  // Track whether the client-side load attempt has finished
   const [loadAttempted, setLoadAttempted] = useState(false);
 
-  // Load album on mount — always try localStorage, even if store has stale album
   useEffect(() => {
     const alreadyLoaded = album?.id === albumId;
     if (!alreadyLoaded) {
@@ -214,7 +342,6 @@ export function EditorClient({ albumId }: { albumId: string }) {
     setLoadAttempted(true);
   }, [albumId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-select first slide when album loads
   useEffect(() => {
     if (album?.id === albumId && album.slides.length > 0 && !selectedSlideId) {
       setSelectedSlide(album.slides[0].id);
@@ -280,12 +407,57 @@ export function EditorClient({ albumId }: { albumId: string }) {
     [selectedSlide, updateSlide],
   );
 
-  // Still waiting for client-side localStorage read
+  const handleUploadImage = useCallback(
+    (dataUrl: string) => {
+      if (!selectedSlide) return;
+      updateSlide(selectedSlide.id, (slide) => {
+        slide.image = {
+          asset: { id: slide.id, url: dataUrl, mimeType: 'image/jpeg', width: 1350, height: 1080 },
+          rect: { x: 0, y: 0, width: 1, height: 1 },
+          objectFit: 'cover',
+          focalPoint: { x: 0.5, y: 0.5 },
+        };
+      });
+    },
+    [selectedSlide, updateSlide],
+  );
+
+  const handleAddSlide = useCallback(() => {
+    if (!album) return;
+    const selectedIdx = album.slides.findIndex((s) => s.id === selectedSlideId);
+    const afterIndex = selectedIdx >= 0 ? selectedIdx : album.slides.length - 1;
+    const newSlide = makeBlankSlide(afterIndex + 2); // temporary number, will be renumbered
+    addSlide(newSlide, afterIndex);
+    setSelectedSlide(newSlide.id);
+  }, [album, selectedSlideId, addSlide, setSelectedSlide]);
+
+  const handleDeleteSlide = useCallback(
+    (slideId: string) => {
+      if (!album || album.slides.length <= 1) return;
+      const idx = album.slides.findIndex((s) => s.id === slideId);
+      deleteSlide(slideId);
+      // Select adjacent slide
+      const remaining = album.slides.filter((s) => s.id !== slideId);
+      if (remaining.length > 0) {
+        const nextIdx = Math.min(idx, remaining.length - 1);
+        setSelectedSlide(remaining[nextIdx].id);
+      }
+    },
+    [album, deleteSlide, setSelectedSlide],
+  );
+
+  const handleDuplicateSlide = useCallback(
+    (slideId: string) => {
+      const newSlide = duplicateSlide(slideId);
+      if (newSlide) setSelectedSlide(newSlide.id);
+    },
+    [duplicateSlide, setSelectedSlide],
+  );
+
   if (!loadAttempted) {
     return <div className={styles.notFound}><p>جاري التحميل...</p></div>;
   }
 
-  // Load was attempted but album not found
   if (!album || album.id !== albumId) {
     return (
       <div className={styles.notFound}>
@@ -350,10 +522,22 @@ export function EditorClient({ albumId }: { albumId: string }) {
               <SlideStripItem
                 key={slide.id}
                 slide={slide}
+                album={album}
                 isSelected={slide.id === selectedSlideId}
                 onClick={() => setSelectedSlide(slide.id)}
+                onDelete={() => handleDeleteSlide(slide.id)}
+                onDuplicate={() => handleDuplicateSlide(slide.id)}
               />
             ))}
+          </div>
+          <div className={styles.stripFooter}>
+            <button
+              type="button"
+              className={styles.addSlideBtn}
+              onClick={handleAddSlide}
+            >
+              + شريحة جديدة
+            </button>
           </div>
         </aside>
 
@@ -403,6 +587,7 @@ export function EditorClient({ albumId }: { albumId: string }) {
               onUpdateBody={handleUpdateBody}
               onUpdateBanner={handleUpdateBanner}
               onUpdateSource={handleUpdateSource}
+              onUploadImage={handleUploadImage}
             />
           ) : (
             <div className={styles.propEmpty}>
