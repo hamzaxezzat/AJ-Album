@@ -46,3 +46,6 @@ next-env.d.ts
 
 # claude internal
 .claude/
+
+# reference images (large files, not needed in repo)
+Album-References/
