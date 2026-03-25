@@ -1,0 +1,51 @@
+{
+  "id": "standard_title_body",
+  "name": "عنوان + نص",
+  "archetype": "standard_title_body",
+  "coverCompatible": false,
+  "requiresImage": true,
+  "channelCompatibility": ["aj-main", "aj-mubasher", "aj-lebanon"],
+  "zones": [
+    {
+      "id": "image-zone",
+      "rect": { "x": 0, "y": 0, "width": 1, "height": 0.58 },
+      "role": "image",
+      "stackingOrder": "background"
+    },
+    {
+      "id": "text-content-zone",
+      "rect": { "x": 0.04, "y": 0.60, "width": 0.92, "height": 0.30 },
+      "role": "text_content",
+      "stackingOrder": "content"
+    },
+    {
+      "id": "banner-zone",
+      "rect": { "x": 0, "y": 0.54, "width": 1, "height": 0.10 },
+      "role": "banner",
+      "stackingOrder": "content"
+    },
+    {
+      "id": "footer-chrome",
+      "rect": { "x": 0, "y": 0.926, "width": 1, "height": 0.074 },
+      "role": "footer_chrome",
+      "stackingOrder": "chrome"
+    }
+  ],
+  "defaultBlocks": [
+    {
+      "type": "main_title",
+      "position": { "x": 0.04, "y": 0.60, "width": 0.92, "height": 0.12 },
+      "zIndex": 10,
+      "visible": true,
+      "typographyTokenRef": "heading-l"
+    },
+    {
+      "type": "body_paragraph",
+      "position": { "x": 0.04, "y": 0.73, "width": 0.92, "height": 0.17 },
+      "zIndex": 10,
+      "visible": true,
+      "typographyTokenRef": "body-m",
+      "kashidaEnabled": true
+    }
+  ]
+}

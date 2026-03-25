@@ -1,0 +1,237 @@
+.root {
+  min-height: 100vh;
+  background: #0D1117;
+  color: #e6edf3;
+  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Top bar */
+.topBar {
+  background: #161b22;
+  border-bottom: 1px solid #21262d;
+  padding: 0 32px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  direction: rtl;
+  flex-shrink: 0;
+}
+
+.backLink {
+  color: #7d8590;
+  font-size: 13px;
+  text-decoration: none;
+  direction: ltr;
+}
+.backLink:hover { color: #e6edf3; }
+
+.topTitle {
+  font-family: 'Cairo', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.channelBadge {
+  background: #D32F2F;
+  color: #fff;
+  font-family: 'Cairo', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 4px;
+}
+
+/* Main */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+/* ── Paste view ── */
+.pasteView {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1;
+}
+
+.pasteHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pasteTitle {
+  font-family: 'Cairo', sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  color: #e6edf3;
+}
+
+.pasteHint {
+  font-size: 13px;
+  color: #7d8590;
+  line-height: 1.6;
+}
+
+.scriptArea {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  color: #e6edf3;
+  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  font-size: 16px;
+  line-height: 1.8;
+  padding: 16px;
+  width: 100%;
+  min-height: 340px;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+  direction: rtl;
+}
+.scriptArea:focus { border-color: #D32F2F; }
+.scriptArea::placeholder { color: #484f58; }
+
+/* ── Preview view ── */
+.previewView {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.previewHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  direction: rtl;
+}
+
+.previewTitle {
+  font-family: 'Cairo', sans-serif;
+  font-weight: 700;
+  font-size: 22px;
+  color: #e6edf3;
+}
+
+.previewCount {
+  font-size: 13px;
+  color: #7d8590;
+  margin-top: 4px;
+}
+
+.reparseBtn {
+  background: none;
+  border: 1px solid #30363d;
+  color: #7d8590;
+  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  direction: ltr;
+  flex-shrink: 0;
+}
+.reparseBtn:hover { color: #e6edf3; border-color: #444c56; }
+
+/* Slide grid */
+.slideGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 440px;
+  overflow-y: auto;
+}
+
+.slideCard {
+  background: #161b22;
+  border: 1px solid #21262d;
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  direction: rtl;
+  transition: border-color 0.15s;
+}
+.slideCard:hover { border-color: #30363d; }
+
+.slideCardNum {
+  width: 28px;
+  height: 28px;
+  background: #21262d;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  color: #7d8590;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-family: system-ui, sans-serif;
+  margin-top: 2px;
+}
+
+.slideCardBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.slideCardTitle {
+  font-family: 'Cairo', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  color: #e6edf3;
+  line-height: 1.4;
+}
+
+.slideCardBody2 {
+  font-size: 12px;
+  color: #7d8590;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.archetypeChip {
+  background: #21262d;
+  color: #8b949e;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 4px;
+  width: fit-content;
+  font-family: system-ui, sans-serif;
+}
+
+/* Buttons */
+.primaryBtn {
+  background: #D32F2F;
+  color: #fff;
+  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 13px 28px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+  align-self: flex-start;
+}
+.primaryBtn:hover:not(:disabled) { background: #b71c1c; }
+.primaryBtn:disabled { opacity: 0.4; cursor: not-allowed; }

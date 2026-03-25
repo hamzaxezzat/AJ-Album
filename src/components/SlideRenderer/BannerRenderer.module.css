@@ -1,0 +1,35 @@
+/*
+ * BannerRenderer.module.css
+ *
+ * Banner strip that appears at one of five positions:
+ * top | bottom | float-top | float-bottom | none
+ *
+ * Position classes are applied alongside the base .banner class.
+ * Height and padding come from inline styles (driven by BannerConfig data).
+ */
+
+.banner {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  direction: rtl;
+}
+
+.top {
+  top: 0;
+}
+
+/* bottom = above the footer chrome (footer height = 7.4% of canvas) */
+.bottom {
+  bottom: calc(var(--canvas-height) * 0.074);
+}
+
+.floatTop {
+  top: calc(var(--canvas-height) * 0.12);
+}
+
+.floatBottom {
+  bottom: calc(var(--canvas-height) * 0.20);
+}

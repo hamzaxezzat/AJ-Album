@@ -1,0 +1,84 @@
+/*
+ * BlockRenderer.module.css
+ *
+ * Styles for individual content block types.
+ * All sizing is done via CSS custom properties and em units — never fixed px.
+ * RTL-safe: padding uses padding-inline-* logical properties.
+ */
+
+.titleBlock {
+  text-wrap: balance;
+  overflow-wrap: break-word;
+  word-break: keep-all;
+}
+
+.bodyBlock {
+  overflow-wrap: break-word;
+  word-break: keep-all;
+}
+
+.bulletList {
+  margin: 0;
+}
+
+.bulletItem {
+  padding-block: 0.3em;
+  padding-inline-start: 1.2em;
+  position: relative;
+  text-align: right;
+}
+
+/* Bullet marker — RTL-safe: uses inset-inline-end */
+.bulletItem::before {
+  content: '';
+  position: absolute;
+  inset-inline-end: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: var(--bullet-color, var(--accent-primary));
+}
+
+.bulletItem[data-bullet-style="square"]::before {
+  width: 0.5em;
+  height: 0.5em;
+}
+
+.bulletItem[data-bullet-style="circle"]::before {
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 50%;
+}
+
+.bulletItem[data-bullet-style="dash"]::before {
+  width: 0.7em;
+  height: 0.15em;
+}
+
+.bulletItem[data-bullet-style="dot"]::before {
+  width: 0.3em;
+  height: 0.3em;
+  border-radius: 50%;
+}
+
+/* Divider between bullet items */
+.bulletDivider {
+  border-block-start: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Stat block layout */
+.statBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.statValue {
+  line-height: 1;
+}
+
+.statLabel {
+  margin-block-start: 0.3em;
+  text-align: center;
+}

@@ -1,0 +1,278 @@
+.root {
+  min-height: 100vh;
+  background: #0D1117;
+  color: #e6edf3;
+  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+}
+
+/* Top bar */
+.topBar {
+  background: #161b22;
+  border-bottom: 1px solid #21262d;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.topBarInner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 32px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  direction: rtl;
+}
+
+.platformTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.platformName {
+  font-family: 'Cairo', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  color: #e6edf3;
+  line-height: 1.2;
+}
+
+.platformSub {
+  font-size: 11px;
+  color: #7d8590;
+  letter-spacing: 0.02em;
+  font-family: system-ui, sans-serif;
+  font-weight: 400;
+  direction: ltr;
+  text-align: right;
+}
+
+.channelBadge {
+  background: #D32F2F;
+  color: #fff;
+  font-family: 'Cairo', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 4px 14px;
+  border-radius: 4px;
+  letter-spacing: 0.01em;
+}
+
+/* Main */
+.main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 48px 32px;
+  direction: rtl;
+}
+
+/* Section header */
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.sectionTitle {
+  font-family: 'Cairo', sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  color: #e6edf3;
+}
+
+.newAlbumBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #D32F2F;
+  color: #fff;
+  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.newAlbumBtn:hover {
+  background: #b71c1c;
+}
+
+/* Empty state */
+.emptyState {
+  text-align: center;
+  padding: 80px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.emptyIcon {
+  color: #30363d;
+  margin-bottom: 8px;
+}
+
+.emptyTitle {
+  font-family: 'Cairo', sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  color: #e6edf3;
+}
+
+.emptyDesc {
+  font-size: 14px;
+  color: #7d8590;
+  max-width: 320px;
+  line-height: 1.6;
+}
+
+.emptyCtaBtn {
+  display: inline-block;
+  margin-top: 8px;
+  background: #D32F2F;
+  color: #fff;
+  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 12px 28px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.emptyCtaBtn:hover {
+  background: #b71c1c;
+}
+
+/* Album grid */
+.albumGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+/* Album card */
+.albumCard {
+  background: #161b22;
+  border: 1px solid #21262d;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.15s, transform 0.1s;
+  cursor: pointer;
+}
+
+.albumCard:hover {
+  border-color: #30363d;
+  transform: translateY(-2px);
+}
+
+/* Card thumbnail mockup */
+.cardThumb {
+  background: #0D1117;
+  aspect-ratio: 1350 / 1080;
+  padding: 8px;
+  border-bottom: 1px solid #21262d;
+}
+
+.cardThumbInner {
+  width: 100%;
+  height: 100%;
+  background: #1a1f27;
+  border-radius: 3px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+.cardThumbBanner {
+  position: absolute;
+  bottom: 14%;
+  left: 0;
+  right: 0;
+  height: 10%;
+  background: #D32F2F;
+}
+
+.cardThumbTitle {
+  position: absolute;
+  bottom: 25%;
+  right: 8%;
+  left: 8%;
+  font-family: 'Cairo', sans-serif;
+  font-size: 7px;
+  font-weight: 700;
+  color: #e6edf3;
+  direction: rtl;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardThumbFooter {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 7%;
+  background: #fff;
+}
+
+/* Card body */
+.cardBody {
+  padding: 16px;
+  direction: rtl;
+}
+
+.cardTitle {
+  font-family: 'Cairo', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  color: #e6edf3;
+  margin-bottom: 6px;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardMeta {
+  font-size: 12px;
+  color: #7d8590;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.dot {
+  color: #30363d;
+}
+
+.openBtn {
+  display: inline-block;
+  background: transparent;
+  color: #e6edf3;
+  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  padding: 7px 16px;
+  border-radius: 5px;
+  border: 1px solid #30363d;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.openBtn:hover {
+  background: #21262d;
+  border-color: #444c56;
+}

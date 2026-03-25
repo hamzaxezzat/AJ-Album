@@ -1,0 +1,20 @@
+/*
+ * SlideRenderer.module.css
+ *
+ * The .slideRoot div is the 1350×1080 canvas. All child elements use
+ * CSS custom properties (--canvas-width, --canvas-height) for sizing,
+ * so the same markup renders pixel-identically in the browser and in Puppeteer.
+ */
+
+.slideRoot {
+  position: relative;
+  width: var(--canvas-width);
+  height: var(--canvas-height);
+  overflow: hidden;
+  background-color: var(--background);
+  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  direction: rtl;
+  /* Prevent subpixel rendering differences between browser and Puppeteer */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
