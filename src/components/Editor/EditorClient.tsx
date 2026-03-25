@@ -78,6 +78,29 @@ function plainToRichText(text: string): RichTextContent {
   };
 }
 
+/**
+ * Compress an image data URL to JPEG at reduced resolution.
+ * localStorage limit is ~5MB; a raw PNG can be 3-10MB as base64.
+ * Downscaling to max 1080×1350 at 82% JPEG quality keeps each image ≈150-400KB.
+ */
+function compressImage(dataUrl: string, maxW = 1080, maxH = 1350): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const ratio = Math.min(maxW / img.width, maxH / img.height, 1);
+      const w = Math.round(img.width * ratio);
+      const h = Math.round(img.height * ratio);
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = () => resolve(dataUrl); // fallback: use original
+    img.src = dataUrl;
+  });
+}
+
 function makeBlankSlide(number: number): Slide {
   const id = Math.random().toString(36).slice(2);
   const now = new Date().toISOString();
@@ -218,12 +241,14 @@ function PropertiesPanel({
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      const result = ev.target?.result;
-      if (typeof result === 'string') onUploadImage(result);
+    reader.onload = async (ev) => {
+      const raw = ev.target?.result;
+      if (typeof raw === 'string') {
+        const compressed = await compressImage(raw);
+        onUploadImage(compressed);
+      }
     };
     reader.readAsDataURL(file);
-    // Reset so same file can be re-uploaded
     e.target.value = '';
   }
 
