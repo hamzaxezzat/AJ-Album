@@ -1,53 +1,106 @@
 'use client';
-import { useState } from 'react';
-import {
-  CANVAS, COLORS, LAYOUT, LOGO, TYPOGRAPHY, BANNER, THEME, SHAPE, FOOTER, COLOR_PRESETS,
-} from '../../../config/defaults';
+import { useState, useMemo } from 'react';
+import type { Album, Slide, MainTitleBlock, BodyParagraphBlock, ChannelProfile } from '@/types/album';
+import { SlideRenderer } from '@/components/SlideRenderer';
+import { CANVAS, COLORS, LAYOUT, LOGO, TYPOGRAPHY, BANNER, THEME, SHAPE, FOOTER } from '../../../config/defaults';
+import ajMainRaw from '../../../config/brands/aj-main.json';
 
-// ─── Section wrapper ─────────────────────────────────────────
+const channelProfile = ajMainRaw as unknown as ChannelProfile;
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div style={{ marginBottom: 24 }}>
-      <h3 style={{
-        fontSize: 14, fontWeight: 700, color: '#e6edf3', marginBottom: 10,
-        paddingBottom: 8, borderBottom: '1px solid #21262d',
-      }}>{title}</h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{children}</div>
-    </div>
-  );
+// ─── Build a live preview slide from current defaults ────────
+
+function buildPreviewSlide(): { slide: Slide; album: Album } {
+  const slide: Slide = {
+    id: 'preview',
+    number: 1,
+    role: 'inner',
+    archetypeId: 'standard_title_body',
+    blocks: [
+      {
+        id: 'p-title',
+        type: 'main_title',
+        position: { x: LAYOUT.marginX, y: LAYOUT.titleY, width: LAYOUT.contentWidth, height: LAYOUT.titleHeight },
+        zIndex: 10,
+        visible: true,
+        typographyTokenRef: 'heading-l',
+        content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'مهام أممية' }] }] },
+      } as MainTitleBlock,
+      {
+        id: 'p-body',
+        type: 'body_paragraph',
+        position: { x: LAYOUT.marginX, y: LAYOUT.bodyY, width: LAYOUT.contentWidth, height: LAYOUT.bodyHeight },
+        zIndex: 10,
+        visible: true,
+        typographyTokenRef: 'body-m',
+        kashidaEnabled: true,
+        content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'وُلد علي عبد اللهي عام 1959 في قرية علي آباد بمحافظة مازندران، وانخرط في صفوف الحرس الثوري الإيراني إبان الثورة الإسلامية عام 1979، وتدرّج سريعاً في الرتب العسكرية.' }] }] },
+      } as BodyParagraphBlock,
+    ],
+    image: {
+      rect: { x: 0, y: 0, width: 1, height: LAYOUT.imageHeight },
+      objectFit: 'cover',
+      focalPoint: { x: 0.5, y: 0.5 },
+    },
+    banner: {
+      family: BANNER.family,
+      position: BANNER.defaultPosition,
+      heightNormalized: BANNER.heightNormalized,
+      backgroundColor: 'accent-primary',
+      textColor: 'text-on-accent',
+      paddingNormalized: BANNER.paddingNormalized,
+      overlap: 'none',
+    },
+    metadata: { createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+  };
+
+  const album: Album = {
+    id: 'preview-album',
+    title: 'معاينة',
+    channelProfileId: 'aj-main',
+    theme: {
+      primaryColor: THEME.primaryColor,
+      bannerFamilyId: THEME.bannerFamilyId,
+      defaultBannerPosition: THEME.defaultBannerPosition,
+      density: THEME.density,
+      bulletStyle: THEME.bulletStyle,
+      bulletDividers: THEME.bulletDividers,
+      typographyTone: THEME.typographyTone,
+      mode: THEME.mode,
+    },
+    canvasDimensions: { width: CANVAS.width, height: CANVAS.height, presetName: CANVAS.presetName },
+    slides: [slide],
+    assets: [],
+    metadata: { createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+  };
+
+  return { slide, album };
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-      <span style={{ fontSize: 13, color: '#8b949e', flexShrink: 0 }}>{label}</span>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>{children}</div>
-    </div>
-  );
-}
+// ─── Helpers ─────────────────────────────────────────────────
 
-function Val({ value, unit }: { value: string | number; unit?: string }) {
+function ColorSwatch({ hex, label, size = 28 }: { hex: string; label?: string; size?: number }) {
   return (
-    <span style={{
-      fontSize: 13, color: '#e6edf3', background: '#0d1117',
-      border: '1px solid #30363d', borderRadius: 4, padding: '4px 10px',
-      fontFamily: 'system-ui', direction: 'ltr', minWidth: 60, textAlign: 'center',
-      display: 'inline-block',
-    }}>
-      {value}{unit && <span style={{ color: '#484f58', fontSize: 11, marginRight: 2 }}>{unit}</span>}
-    </span>
-  );
-}
-
-function ColorDot({ hex, label }: { hex: string; label?: string }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
       <div style={{
-        width: 22, height: 22, borderRadius: 4, background: hex,
-        border: hex === '#FFFFFF' ? '1px solid #30363d' : '1px solid transparent',
-      }} title={label ?? hex} />
-      <span style={{ fontSize: 11, color: '#484f58', fontFamily: 'monospace' }}>{hex}</span>
+        width: size, height: size, borderRadius: 6, background: hex,
+        border: hex.toUpperCase() === '#FFFFFF' ? '1px solid #30363d' : '1px solid rgba(255,255,255,0.1)',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+      }} title={hex} />
+      {label && <span style={{ fontSize: 10, color: '#7d8590' }}>{label}</span>}
+    </div>
+  );
+}
+
+function InfoCard({ label, value, unit }: { label: string; value: string | number; unit?: string }) {
+  return (
+    <div style={{
+      background: '#0d1117', border: '1px solid #21262d', borderRadius: 8,
+      padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 4,
+    }}>
+      <span style={{ fontSize: 11, color: '#7d8590' }}>{label}</span>
+      <span style={{ fontSize: 16, fontWeight: 700, color: '#e6edf3', fontFamily: 'system-ui' }}>
+        {value}<span style={{ fontSize: 11, color: '#484f58', fontWeight: 400 }}>{unit}</span>
+      </span>
     </div>
   );
 }
@@ -56,6 +109,10 @@ function ColorDot({ hex, label }: { hex: string; label?: string }) {
 
 export function CustomizationPanel() {
   const [isOpen, setIsOpen] = useState(false);
+  const { slide, album } = useMemo(() => buildPreviewSlide(), []);
+
+  const previewScale = 380 / CANVAS.width;
+  const previewH = Math.round(CANVAS.height * previewScale);
 
   if (!isOpen) {
     return (
@@ -80,115 +137,136 @@ export function CustomizationPanel() {
   return (
     <div style={{
       background: '#161b22', border: '1px solid #30363d', borderRadius: 12,
-      padding: 24, direction: 'rtl', marginTop: 8,
+      padding: 28, direction: 'rtl',
     }}>
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: 20, paddingBottom: 12, borderBottom: '1px solid #21262d',
+        marginBottom: 24,
       }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: '#e6edf3', margin: 0 }}>
-          إعدادات المنصة الافتراضية
-        </h2>
+        <div>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: '#e6edf3', margin: 0 }}>
+            إعدادات المنصة الافتراضية
+          </h2>
+          <p style={{ fontSize: 12, color: '#7d8590', marginTop: 4 }}>
+            معاينة حية لشكل كل ألبوم جديد &mdash; للتعديل: حرّر
+            <code style={{ background: '#0d1117', padding: '2px 6px', borderRadius: 3, margin: '0 4px', direction: 'ltr', display: 'inline-block', fontSize: 11 }}>
+              config/defaults.ts
+            </code>
+          </p>
+        </div>
         <button
           type="button"
           onClick={() => setIsOpen(false)}
           style={{
-            background: 'none', border: 'none', color: '#8b949e', fontSize: 20,
-            cursor: 'pointer', lineHeight: 1, padding: 4,
+            background: '#21262d', border: '1px solid #30363d', color: '#8b949e',
+            fontSize: 13, cursor: 'pointer', padding: '6px 14px', borderRadius: 6,
+            fontFamily: 'var(--brand-font-family)',
           }}
-        >&#10005;</button>
+        >إغلاق</button>
       </div>
 
-      <p style={{ fontSize: 12, color: '#7d8590', marginBottom: 20, lineHeight: 1.6 }}>
-        هذه الإعدادات الافتراضية لكل ألبوم جديد. للتعديل: حرّر الملف
-        <code style={{ background: '#0d1117', padding: '2px 6px', borderRadius: 3, margin: '0 4px', direction: 'ltr', display: 'inline-block' }}>
-          config/defaults.ts
-        </code>
-      </p>
+      {/* Main layout: preview left + settings right */}
+      <div style={{ display: 'flex', gap: 32, alignItems: 'flex-start' }}>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-        {/* Column 1 */}
-        <div>
-          <Section title="اللوحة (Canvas)">
-            <Row label="العرض"><Val value={CANVAS.width} unit="px" /></Row>
-            <Row label="الارتفاع"><Val value={CANVAS.height} unit="px" /></Row>
-            <Row label="النسبة"><Val value={CANVAS.presetName} /></Row>
-          </Section>
-
-          <Section title="الألوان">
-            <Row label="اللون الأساسي"><ColorDot hex={COLORS.accent} /></Row>
-            <Row label="خلفية الشريحة"><ColorDot hex={COLORS.background} /></Row>
-            <Row label="نص رئيسي"><ColorDot hex={COLORS.textPrimary} /></Row>
-            <Row label="نص ثانوي"><ColorDot hex={COLORS.textSecondary} /></Row>
-            <Row label="نص فوق اللون"><ColorDot hex={COLORS.textOnAccent} /></Row>
-          </Section>
-
-          <Section title="الخطوط">
-            <Row label="عائلة الخط"><Val value={TYPOGRAPHY.fontFamily.split(',')[0].replace(/'/g, '')} /></Row>
-            <Row label="حجم العنوان"><Val value={TYPOGRAPHY.title.fontSize} unit="px" /></Row>
-            <Row label="وزن العنوان"><Val value={TYPOGRAPHY.title.fontWeight} /></Row>
-            <Row label="حجم النص"><Val value={TYPOGRAPHY.body.fontSize} unit="px" /></Row>
-            <Row label="وزن النص"><Val value={TYPOGRAPHY.body.fontWeight} /></Row>
-            <Row label="حجم صغير"><Val value={TYPOGRAPHY.small.fontSize} unit="px" /></Row>
-            <Row label="حجم التسمية"><Val value={TYPOGRAPHY.label.fontSize} unit="px" /></Row>
-          </Section>
-
-          <Section title="ألوان النص المتاحة">
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {COLOR_PRESETS.text.map(c => <ColorDot key={c.hex} hex={c.hex} label={c.label} />)}
+        {/* ── Live Preview ── */}
+        <div style={{ flexShrink: 0 }}>
+          <div style={{
+            width: 380, height: previewH,
+            borderRadius: 8, overflow: 'hidden',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px #30363d',
+          }}>
+            <div style={{ zoom: previewScale } as React.CSSProperties}>
+              <SlideRenderer slide={slide} album={album} channelProfile={channelProfile} />
             </div>
-          </Section>
-
-          <Section title="ألوان التمييز">
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {COLOR_PRESETS.highlight.map(c => <ColorDot key={c.hex} hex={c.hex} label={c.label} />)}
-            </div>
-          </Section>
+          </div>
+          <p style={{ fontSize: 11, color: '#484f58', textAlign: 'center', marginTop: 8, fontFamily: 'system-ui' }}>
+            {CANVAS.width} &times; {CANVAS.height} &mdash; معاينة حية
+          </p>
         </div>
 
-        {/* Column 2 */}
-        <div>
-          <Section title="التخطيط (Layout)">
-            <Row label="هامش جانبي"><Val value={(LAYOUT.marginX * 100).toFixed(1)} unit="%" /></Row>
-            <Row label="عرض المحتوى"><Val value={(LAYOUT.contentWidth * 100).toFixed(1)} unit="%" /></Row>
-            <Row label="ارتفاع الصورة"><Val value={(LAYOUT.imageHeight * 100).toFixed(0)} unit="%" /></Row>
-            <Row label="موضع العنوان Y"><Val value={(LAYOUT.titleY * 100).toFixed(0)} unit="%" /></Row>
-            <Row label="موضع النص Y"><Val value={(LAYOUT.bodyY * 100).toFixed(0)} unit="%" /></Row>
-            <Row label="ارتفاع الفوتر"><Val value={(LAYOUT.footerHeight * 100).toFixed(1)} unit="%" /></Row>
-          </Section>
+        {/* ── Settings ── */}
+        <div style={{ flex: 1, minWidth: 0 }}>
 
-          <Section title="الشعار (Logo)">
-            <Row label="هامش علوي"><Val value={LOGO.marginTop} unit="px" /></Row>
-            <Row label="هامش جانبي"><Val value={LOGO.marginLeft} unit="px" /></Row>
-            <Row label="عرض الشعار"><Val value={(LOGO.widthFraction * 100).toFixed(0)} unit="%" /></Row>
-          </Section>
+          {/* Colors row */}
+          <div style={{ marginBottom: 24 }}>
+            <h3 style={{ fontSize: 13, fontWeight: 700, color: '#c9d1d9', marginBottom: 12 }}>الألوان</h3>
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+              <ColorSwatch hex={COLORS.accent} label="أساسي" />
+              <ColorSwatch hex={COLORS.background} label="خلفية" />
+              <ColorSwatch hex={COLORS.textPrimary} label="نص" />
+              <ColorSwatch hex={COLORS.textSecondary} label="ثانوي" />
+              <ColorSwatch hex={COLORS.textOnAccent} label="فوق اللون" />
+              <ColorSwatch hex={SHAPE.fillColor} label="أشكال" />
+            </div>
+          </div>
 
-          <Section title="البانر (Banner)">
-            <Row label="الموضع الافتراضي"><Val value={BANNER.defaultPosition === 'none' ? 'بدون' : BANNER.defaultPosition} /></Row>
-            <Row label="الارتفاع"><Val value={(BANNER.heightNormalized * 100).toFixed(0)} unit="%" /></Row>
-            <Row label="الحشو"><Val value={(BANNER.paddingNormalized * 100).toFixed(0)} unit="%" /></Row>
-          </Section>
+          {/* Typography */}
+          <div style={{ marginBottom: 24 }}>
+            <h3 style={{ fontSize: 13, fontWeight: 700, color: '#c9d1d9', marginBottom: 12 }}>الخطوط</h3>
+            <div style={{
+              background: '#0d1117', borderRadius: 8, padding: 16,
+              border: '1px solid #21262d', marginBottom: 12,
+            }}>
+              <span style={{
+                fontFamily: TYPOGRAPHY.fontFamily, fontSize: 24, color: '#e6edf3',
+                display: 'block', marginBottom: 4,
+              }}>
+                {TYPOGRAPHY.fontFamily.split(',')[0].replace(/'/g, '')}
+              </span>
+              <span style={{ fontSize: 11, color: '#484f58' }}>
+                {TYPOGRAPHY.fontFamily}
+              </span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
+              <InfoCard label="عنوان" value={TYPOGRAPHY.title.fontSize} unit="px" />
+              <InfoCard label="نص" value={TYPOGRAPHY.body.fontSize} unit="px" />
+              <InfoCard label="صغير" value={TYPOGRAPHY.small.fontSize} unit="px" />
+              <InfoCard label="تسمية" value={TYPOGRAPHY.label.fontSize} unit="px" />
+            </div>
+          </div>
 
-          <Section title="السمة الافتراضية (Theme)">
-            <Row label="الكثافة"><Val value={THEME.density} /></Row>
-            <Row label="شكل النقاط"><Val value={THEME.bulletStyle} /></Row>
-            <Row label="حجم النقاط"><Val value={THEME.bulletSize} unit="px" /></Row>
-            <Row label="فواصل بين النقاط"><Val value={THEME.bulletDividers ? 'نعم' : 'لا'} /></Row>
-            <Row label="الوضع"><Val value={THEME.mode} /></Row>
-          </Section>
+          {/* Layout */}
+          <div style={{ marginBottom: 24 }}>
+            <h3 style={{ fontSize: 13, fontWeight: 700, color: '#c9d1d9', marginBottom: 12 }}>التخطيط</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+              <InfoCard label="صورة" value={`${(LAYOUT.imageHeight * 100).toFixed(0)}`} unit="%" />
+              <InfoCard label="عنوان Y" value={`${(LAYOUT.titleY * 100).toFixed(0)}`} unit="%" />
+              <InfoCard label="نص Y" value={`${(LAYOUT.bodyY * 100).toFixed(0)}`} unit="%" />
+              <InfoCard label="هامش" value={`${(LAYOUT.marginX * 100).toFixed(1)}`} unit="%" />
+              <InfoCard label="فوتر" value={`${(LAYOUT.footerHeight * 100).toFixed(1)}`} unit="%" />
+              <InfoCard label="لوحة" value={`${CANVAS.width}×${CANVAS.height}`} />
+            </div>
+          </div>
 
-          <Section title="الأشكال الافتراضية (Shapes)">
-            <Row label="لون التعبئة"><ColorDot hex={SHAPE.fillColor} /></Row>
-            <Row label="شفافية التعبئة"><Val value={(SHAPE.fillOpacity * 100).toFixed(0)} unit="%" /></Row>
-            <Row label="سمك الحد"><Val value={SHAPE.strokeWidth} unit="px" /></Row>
-            <Row label="تدوير الزوايا"><Val value={SHAPE.borderRadius} unit="px" /></Row>
-          </Section>
+          {/* Logo + Banner + Footer */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div>
+              <h3 style={{ fontSize: 13, fontWeight: 700, color: '#c9d1d9', marginBottom: 12 }}>الشعار</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <InfoCard label="هامش علوي" value={`${LOGO.marginTop}`} unit="px" />
+                <InfoCard label="عرض" value={`${(LOGO.widthFraction * 100).toFixed(0)}`} unit="%" />
+              </div>
+            </div>
+            <div>
+              <h3 style={{ fontSize: 13, fontWeight: 700, color: '#c9d1d9', marginBottom: 12 }}>البانر</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <InfoCard label="الموضع" value={BANNER.defaultPosition === 'none' ? 'بدون' : BANNER.defaultPosition} />
+                <InfoCard label="الارتفاع" value={`${(BANNER.heightNormalized * 100).toFixed(0)}`} unit="%" />
+              </div>
+            </div>
+          </div>
 
-          <Section title="الفوتر (Footer)">
-            <Row label="حجم النقاط"><Val value={FOOTER.dotSize} unit="px" /></Row>
-            <Row label="المسافة بين النقاط"><Val value={FOOTER.dotGap} unit="px" /></Row>
-          </Section>
+          {/* Theme row */}
+          <div style={{ marginTop: 24 }}>
+            <h3 style={{ fontSize: 13, fontWeight: 700, color: '#c9d1d9', marginBottom: 12 }}>السمة</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
+              <InfoCard label="كثافة" value={THEME.density} />
+              <InfoCard label="نقاط" value={THEME.bulletStyle} />
+              <InfoCard label="حجم النقاط" value={THEME.bulletSize} unit="px" />
+              <InfoCard label="فوتر نقاط" value={FOOTER.dotSize} unit="px" />
+            </div>
+          </div>
         </div>
       </div>
     </div>
