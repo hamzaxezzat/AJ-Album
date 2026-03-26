@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import type { AlbumTheme, ChannelProfile, BannerPosition, BulletStyle, BulletConnectorConfig } from '@/types/album';
 import { LABEL_STYLE, toggleBtnStyle } from './styles';
+import { getSavedThemes, type SavedTheme } from '@/lib/themeStore';
 
 interface AlbumSettingsPanelProps {
   theme: AlbumTheme;
@@ -60,8 +61,41 @@ export function AlbumSettingsPanel({ theme, channelProfile, onUpdateTheme }: Alb
     });
   };
 
+  const [themes] = useState(() => getSavedThemes());
+
+  const handleApplyTheme = (saved: SavedTheme) => {
+    onUpdateTheme(t => {
+      Object.assign(t, saved.theme);
+    });
+    setHexInput(saved.theme.titleColor ?? saved.theme.primaryColor);
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+
+      {/* ── Saved themes ── */}
+      {themes.length > 0 && (
+        <div>
+          <label style={LABEL_STYLE}>تطبيق ثيم محفوظ</label>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {themes.map(s => (
+              <button key={s.id} type="button" onClick={() => handleApplyTheme(s)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '6px 12px', background: '#0d1117', border: '1px solid #30363d',
+                  borderRadius: 6, cursor: 'pointer', fontFamily: 'var(--brand-font-family)',
+                  fontSize: 12, color: '#c9d1d9', transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#D32F2F'; e.currentTarget.style.background = '#161b22'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#30363d'; e.currentTarget.style.background = '#0d1117'; }}
+              >
+                <span style={{ width: 14, height: 14, borderRadius: '50%', background: s.theme.primaryColor ?? '#D32F2F', flexShrink: 0, border: '1px solid #30363d' }} />
+                {s.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Title color ── */}
       <div>

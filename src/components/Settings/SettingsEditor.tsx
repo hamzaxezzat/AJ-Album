@@ -9,6 +9,7 @@ import { SlideRenderer } from '@/components/SlideRenderer';
 import { SlideThumbnail } from '@/components/Editor/panels/SlideThumbnail';
 import { useCanvasScale } from '@/components/Editor/hooks/useCanvasScale';
 import { CANVAS, COLORS, LAYOUT, BANNER, THEME } from '../../../config/defaults';
+import { getSavedThemes, saveTheme, deleteTheme, type SavedTheme } from '@/lib/themeStore';
 import ajMainRaw from '../../../config/brands/aj-main.json';
 
 const channelProfile = ajMainRaw as unknown as ChannelProfile;
@@ -123,7 +124,14 @@ interface ExtendedTheme extends AlbumTheme {
   bannerHeight?: number;
 }
 
-function SettingsPanel({ theme, onUpdate }: { theme: ExtendedTheme; onUpdate: (fn: (t: ExtendedTheme) => void) => void }) {
+function SettingsPanel({ theme, onUpdate, onSave, onLoadTheme, onDeleteTheme, savedThemes }: {
+  theme: ExtendedTheme;
+  onUpdate: (fn: (t: ExtendedTheme) => void) => void;
+  onSave: (name: string) => void;
+  onLoadTheme: (saved: SavedTheme) => void;
+  onDeleteTheme: (id: string) => void;
+  savedThemes: SavedTheme[];
+}) {
   const headingToken = channelProfile.typography['heading-l'];
   const bodyToken = channelProfile.typography['body-m'];
   const titleSize = theme.titleFontSize ?? headingToken.fontSize;
@@ -360,15 +368,85 @@ function SettingsPanel({ theme, onUpdate }: { theme: ExtendedTheme; onUpdate: (f
         </div>
       </div>
 
-      {/* Info box */}
-      <div style={{ marginTop: 8, padding: 12, background: '#0d1117', borderRadius: 8, border: '1px solid #21262d' }}>
-        <p style={{ fontSize: 11, color: '#7d8590', lineHeight: 1.7, margin: 0 }}>
-          التغييرات تظهر فوراً في المعاينة. لحفظها كافتراضية دائمة:
-        </p>
-        <code style={{ fontSize: 11, color: '#58a6ff', display: 'block', marginTop: 4, direction: 'ltr' }}>
-          config/defaults.ts
-        </code>
-      </div>
+      <div style={DIVIDER} />
+
+      {/* ═══════════════ حفظ الثيم ═══════════════ */}
+      <h3 style={SECTION_TITLE}>حفظ كثيم</h3>
+
+      <SaveThemeSection onSave={onSave} />
+
+      {/* Saved themes list */}
+      {savedThemes.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+          <label style={{ ...LABEL, marginBottom: 2 }}>الثيمات المحفوظة ({savedThemes.length})</label>
+          {savedThemes.map(s => (
+            <div key={s.id} style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '8px 10px', background: '#0d1117', borderRadius: 6,
+              border: '1px solid #21262d',
+            }}>
+              {/* Color preview dot */}
+              <div style={{
+                width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                background: s.theme.primaryColor ?? '#D32F2F',
+                border: '2px solid #30363d',
+              }} />
+              <span style={{ flex: 1, fontSize: 13, color: '#e6edf3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {s.name}
+              </span>
+              <button type="button" onClick={() => onLoadTheme(s)} title="تطبيق"
+                style={{ background: '#21262d', border: '1px solid #30363d', borderRadius: 4, color: '#58a6ff', fontSize: 11, padding: '3px 8px', cursor: 'pointer', fontFamily: 'var(--brand-font-family)' }}>
+                تطبيق
+              </button>
+              <button type="button" onClick={() => onDeleteTheme(s.id)} title="حذف"
+                style={{ background: 'none', border: 'none', color: '#484f58', fontSize: 14, cursor: 'pointer', padding: '0 2px' }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#f85149'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#484f58'; }}>
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SaveThemeSection({ onSave }: { onSave: (name: string) => void }) {
+  const [name, setName] = useState('');
+
+  const handleSave = () => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    onSave(trimmed);
+    setName('');
+  };
+
+  return (
+    <div style={{ display: 'flex', gap: 6 }}>
+      <input
+        type="text"
+        value={name}
+        onChange={e => setName(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
+        placeholder="اسم الثيم..."
+        dir="rtl"
+        style={{
+          flex: 1, padding: '8px 10px', fontSize: 13,
+          background: '#0d1117', border: '1px solid #30363d', borderRadius: 6,
+          color: '#e6edf3', fontFamily: 'var(--brand-font-family)',
+        }}
+      />
+      <button type="button" onClick={handleSave} disabled={!name.trim()}
+        style={{
+          background: name.trim() ? '#D32F2F' : '#21262d',
+          color: name.trim() ? '#fff' : '#484f58',
+          border: 'none', borderRadius: 6, padding: '8px 16px', fontSize: 13,
+          cursor: name.trim() ? 'pointer' : 'default',
+          fontFamily: 'var(--brand-font-family)', fontWeight: 700,
+        }}>
+        حفظ
+      </button>
     </div>
   );
 }
@@ -388,8 +466,13 @@ export function SettingsEditor() {
   });
 
   const [selectedIdx, setSelectedIdx] = useState(0);
+  const [savedThemes, setSavedThemes] = useState<SavedTheme[]>([]);
+  const [saveMsg, setSaveMsg] = useState('');
   const canvasAreaRef = useRef<HTMLDivElement>(null);
   const canvasScale = useCanvasScale(canvasAreaRef, CANVAS.width, CANVAS.height);
+
+  // Load saved themes on mount
+  useState(() => { setSavedThemes(getSavedThemes()); });
 
   const slides = useMemo(() => buildPreviewSlides(theme), [theme]);
 
@@ -414,6 +497,28 @@ export function SettingsEditor() {
     });
   }, []);
 
+  const handleSaveTheme = useCallback((name: string) => {
+    const saved: SavedTheme = {
+      id: Math.random().toString(36).slice(2),
+      name,
+      theme: { ...theme },
+      createdAt: new Date().toISOString(),
+    };
+    saveTheme(saved);
+    setSavedThemes(getSavedThemes());
+    setSaveMsg(`تم حفظ "${name}"`);
+    setTimeout(() => setSaveMsg(''), 2000);
+  }, [theme]);
+
+  const handleLoadTheme = useCallback((saved: SavedTheme) => {
+    setTheme(saved.theme as ExtendedTheme);
+  }, []);
+
+  const handleDeleteTheme = useCallback((id: string) => {
+    deleteTheme(id);
+    setSavedThemes(getSavedThemes());
+  }, []);
+
   return (
     <div style={{
       height: '100vh', display: 'flex', flexDirection: 'column',
@@ -431,7 +536,12 @@ export function SettingsEditor() {
           <span style={{ fontWeight: 700, fontSize: 15, color: '#e6edf3' }} dir="rtl" lang="ar">إعدادات المنصة</span>
           <span style={{ fontSize: 12, color: '#484f58' }}>— معاينة حية</span>
         </div>
-        <span style={{ background: '#D32F2F', color: '#fff', fontWeight: 700, fontSize: 12, padding: '3px 10px', borderRadius: 4 }}>الجزيرة</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {saveMsg && (
+            <span style={{ fontSize: 12, color: '#4CAF50', fontFamily: 'var(--brand-font-family)' }}>{saveMsg}</span>
+          )}
+          <span style={{ background: '#D32F2F', color: '#fff', fontWeight: 700, fontSize: 12, padding: '3px 10px', borderRadius: 4 }}>الجزيرة</span>
+        </div>
       </header>
 
       {/* 3-panel layout */}
@@ -494,7 +604,14 @@ export function SettingsEditor() {
           width: 320, background: '#161b22',
           borderRight: '1px solid #21262d', overflow: 'hidden', flexShrink: 0,
         }}>
-          <SettingsPanel theme={theme} onUpdate={handleUpdate} />
+          <SettingsPanel
+            theme={theme}
+            onUpdate={handleUpdate}
+            onSave={handleSaveTheme}
+            onLoadTheme={handleLoadTheme}
+            onDeleteTheme={handleDeleteTheme}
+            savedThemes={savedThemes}
+          />
         </aside>
       </div>
     </div>
