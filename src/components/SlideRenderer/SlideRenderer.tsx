@@ -142,6 +142,8 @@ export function SlideRenderer({
       <FooterChrome
         channelProfile={channelProfile}
         tokens={tokens}
+        currentSlideNumber={slide.number}
+        totalSlides={album.slides.length}
       />
     </div>
   );

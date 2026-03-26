@@ -39,13 +39,13 @@
 }
 
 .bulletItem[data-bullet-style="square"]::before {
-  width: 0.5em;
-  height: 0.5em;
+  width: var(--bullet-size, 0.5em);
+  height: var(--bullet-size, 0.5em);
 }
 
 .bulletItem[data-bullet-style="circle"]::before {
-  width: 0.5em;
-  height: 0.5em;
+  width: var(--bullet-size, 0.5em);
+  height: var(--bullet-size, 0.5em);
   border-radius: 50%;
 }
 
@@ -55,9 +55,14 @@
 }
 
 .bulletItem[data-bullet-style="dot"]::before {
-  width: 0.3em;
-  height: 0.3em;
+  width: var(--bullet-size, 0.3em);
+  height: var(--bullet-size, 0.3em);
   border-radius: 50%;
+}
+
+/* Hide default bullet marker when connector line provides its own dots */
+.bulletItem[data-hide-bullet="true"]::before {
+  display: none;
 }
 
 /* Divider between bullet items */

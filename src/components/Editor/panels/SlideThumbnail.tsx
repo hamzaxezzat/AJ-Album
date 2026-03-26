@@ -25,7 +25,12 @@ export function SlideThumbnail({ slide, album, channelProfile }: SlideThumbnailP
       flexShrink: 0,
       pointerEvents: 'none',
     }}>
-      <div style={{ zoom: thumbScale } as React.CSSProperties}>
+      <div style={{
+        transform: `scale(${thumbScale})`,
+        transformOrigin: 'top left',
+        width: album.canvasDimensions.width,
+        height: album.canvasDimensions.height,
+      }}>
         <SlideRenderer slide={slide} album={album} channelProfile={channelProfile} />
       </div>
     </div>

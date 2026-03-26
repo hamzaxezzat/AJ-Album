@@ -38,13 +38,20 @@ function migrateAlbum(album: Album): Album {
       }
     }
 
-    // 3. Fix image zone only during landscape migration or if truly missing
+    // 3. Fix image zone: landscape migration (full-bleed → 54%) or missing image zone
     if (isLandscape && slide.image && slide.image.rect.height >= 0.9) {
       slide.image = {
         rect: { x: 0, y: 0, width: 1, height: 0.54 },
         objectFit: 'cover',
         focalPoint: slide.image.focalPoint ?? { x: 0.5, y: 0.5 },
         asset: slide.image.asset,
+      };
+    } else if (!slide.image) {
+      // Ensure every slide has an image zone (even without an asset)
+      slide.image = {
+        rect: { x: 0, y: 0, width: 1, height: 0.54 },
+        objectFit: 'cover',
+        focalPoint: { x: 0.5, y: 0.5 },
       };
     }
 

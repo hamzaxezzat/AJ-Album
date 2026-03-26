@@ -5,6 +5,10 @@ import type { ChannelProfile, ResolvedTokens } from '@/types/album';
 interface FooterChromeProps {
   channelProfile: ChannelProfile;
   tokens: ResolvedTokens;
+  /** Current slide number (1-based). Used for pagination dots. */
+  currentSlideNumber?: number;
+  /** Total number of slides in the album. */
+  totalSlides?: number;
 }
 
 const PLATFORM_ICON: Record<string, string> = {
@@ -13,7 +17,7 @@ const PLATFORM_ICON: Record<string, string> = {
   twitter: '𝕏',
 };
 
-export function FooterChrome({ channelProfile, tokens }: FooterChromeProps) {
+export function FooterChrome({ channelProfile, tokens, currentSlideNumber = 1, totalSlides = 3 }: FooterChromeProps) {
   const footer = channelProfile.footer;
   const handles = footer.socialHandles ?? [];
   const labelToken = tokens.typography['label'];
@@ -65,14 +69,14 @@ export function FooterChrome({ channelProfile, tokens }: FooterChromeProps) {
 
       {/* Left side (RTL end): pagination dots */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-        {[0, 1, 2].map((i) => (
+        {Array.from({ length: totalSlides }, (_, i) => (
           <div
             key={i}
             style={{
               width: 7,
               height: 7,
               borderRadius: '50%',
-              backgroundColor: i === 0 ? tokens.accentPrimary : '#CCCCCC',
+              backgroundColor: i === currentSlideNumber - 1 ? tokens.accentPrimary : '#CCCCCC',
             }}
           />
         ))}
