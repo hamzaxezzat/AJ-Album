@@ -272,7 +272,7 @@ export interface BlockStyleOverride {
   fontWeight?: number;
   fontSize?: number;           // canvas px — overrides token value
   lineHeight?: number;
-  textAlign?: 'right' | 'left' | 'center';
+  textAlign?: 'right' | 'left' | 'center' | 'justify';
   color?: string;
   backgroundColor?: string;
   backgroundOpacity?: number;

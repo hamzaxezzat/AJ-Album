@@ -7,7 +7,7 @@ import type { BlockStyleOverride } from '@/types/album';
 interface FloatingToolbarProps {
   editor: Editor | null;
   fontSize: number;
-  textAlign: 'right' | 'left' | 'center';
+  textAlign: 'right' | 'left' | 'center' | 'justify';
   onUpdateStyle: (overrides: Partial<BlockStyleOverride>) => void;
 }
 
@@ -103,6 +103,9 @@ export function FloatingToolbar({
         </ToolBtn>
         <ToolBtn active={textAlign === 'left'} onClick={run(() => onUpdateStyle({ textAlign: 'left' }))} title="يسار">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="2" width="16" height="2" rx="1"/><rect x="0" y="7" width="12" height="2" rx="1"/><rect x="0" y="12" width="16" height="2" rx="1"/></svg>
+        </ToolBtn>
+        <ToolBtn active={textAlign === 'justify'} onClick={run(() => onUpdateStyle({ textAlign: 'justify' }))} title="ضبط">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="2" width="16" height="2" rx="1"/><rect x="0" y="7" width="16" height="2" rx="1"/><rect x="0" y="12" width="16" height="2" rx="1"/></svg>
         </ToolBtn>
       </Group>
 
