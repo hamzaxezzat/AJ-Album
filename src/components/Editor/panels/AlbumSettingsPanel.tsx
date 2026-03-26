@@ -64,10 +64,22 @@ export function AlbumSettingsPanel({ theme, channelProfile, onUpdateTheme }: Alb
   const [themes] = useState(() => getSavedThemes());
 
   const handleApplyTheme = (saved: SavedTheme) => {
+    const s = saved.theme;
     onUpdateTheme(t => {
-      Object.assign(t, saved.theme);
+      if (s.primaryColor) t.primaryColor = s.primaryColor;
+      if (s.titleColor) t.titleColor = s.titleColor;
+      if (s.bodyColor) t.bodyColor = s.bodyColor;
+      if (s.titleFontSize) t.titleFontSize = s.titleFontSize;
+      if (s.bodyFontSize) t.bodyFontSize = s.bodyFontSize;
+      if (s.bulletStyle) t.bulletStyle = s.bulletStyle as BulletStyle;
+      if (s.bulletSize) t.bulletSize = s.bulletSize as number;
+      if (s.bulletDividers !== undefined) t.bulletDividers = s.bulletDividers as boolean;
+      if (s.bulletConnector) t.bulletConnector = s.bulletConnector as BulletConnectorConfig;
+      if (s.defaultBannerPosition) t.defaultBannerPosition = s.defaultBannerPosition as BannerPosition;
+      if (s.density) t.density = s.density as AlbumTheme['density'];
     });
-    setHexInput(saved.theme.titleColor ?? saved.theme.primaryColor);
+    setHexInput(s.titleColor as string ?? s.primaryColor as string ?? effectiveTitleColor);
+    if (s.bulletConnector) setConnectorHexInput((s.bulletConnector as BulletConnectorConfig).color);
   };
 
   return (
