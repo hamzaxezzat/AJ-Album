@@ -20,16 +20,36 @@ const ARCHETYPE_LABELS: Record<string, string> = {
   mixed_info: 'معلومات متنوعة',
 };
 
-const PLACEHOLDER = `علي عبد اللهي: العقل المدبر للتنسيق العسكري في إيران
+const DEMO_SCRIPT = `1
+علي عبد اللهي: العقل المدبر للتنسيق العسكري في إيران
 
+2
 النشأة والبدايات العسكرية
-وُلد علي عبد اللهي عام 1959 في قرية علي آباد بمحافظة مازندران، والتحق بصفوف الحرس الثوري الإيراني في سن مبكرة إبان الثورة الإسلامية.
+وُلد علي عبد اللهي عام 1959 في قرية علي آباد بمحافظة مازندران، وانخرط في صفوف الحرس الثوري الإيراني إبان الثورة الإسلامية عام 1979، وتدرّج سريعاً في الرتب العسكرية خلال سنوات الحرب الإيرانية العراقية.
 
+3
 قيادة سلاح البر
-تولى منصب قائد سلاح البر في الحرس الثوري الإيراني، وأشرف على تطوير القدرات الميدانية خلال سنوات حرب الخليج.
+تولّى منصب قائد سلاح البر في الحرس الثوري ورئاسة أركان القوة البرية في الجيش. هذا الجمع بين قيادة القوتين جعله من القلائل الذين يمتلكون خبرة عميقة في التنسيق المشترك.
 
-الدور في الحرس الثوري
-شغل مناصب قيادية عليا ضمن الهيكل التنظيمي للحرس الثوري، وأسهم في بناء منظومة التنسيق العسكري مع الفصائل الحليفة في المنطقة.`;
+4
+المحطة الأمنية
+انتقل إلى العمل الأمني المدني، إذ تولّى منصب نائب وزير الداخلية للشؤون الأمنية (2009 - 2014)، فأدار ملفات شائكة تتعلق بالأمن الداخلي والحدود والاحتجاجات.
+
+5
+بيانات شخصية
+الاسم: علي عبد اللهي
+المنصب: رئيس هيئة الأركان المشتركة
+الجنسية: إيراني
+سنة الميلاد: 1959
+
+6
+العقوبات الدولية
+• أُدرج ضمن قوائم العقوبات الأوروبية
+• فُرضت عليه عقوبات أمريكية مباشرة
+• يُصنّف كمهندس لتعزيز القدرات الدفاعية
+• ممنوع من السفر إلى دول الاتحاد الأوروبي`;
+
+const PLACEHOLDER = `الصق السكريبت هنا أو اضغط "تحميل نص تجريبي" للتجربة...`;
 
 export function NewAlbumWizard() {
   const router = useRouter();
@@ -110,13 +130,36 @@ export function NewAlbumWizard() {
               autoFocus
             />
 
-            <button
-              className={styles.primaryBtn}
-              onClick={handleParse}
-              disabled={!scriptText.trim()}
-            >
-              تحليل السكريبت ←
-            </button>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <button
+                className={styles.primaryBtn}
+                onClick={handleParse}
+                disabled={!scriptText.trim()}
+                style={{ flex: 1 }}
+              >
+                تحليل السكريبت ←
+              </button>
+              <button
+                type="button"
+                onClick={() => setScriptText(DEMO_SCRIPT)}
+                style={{
+                  background: '#21262d',
+                  color: '#8b949e',
+                  border: '1px solid #30363d',
+                  borderRadius: 8,
+                  padding: '12px 20px',
+                  fontSize: 15,
+                  cursor: 'pointer',
+                  fontFamily: 'var(--brand-font-family)',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#30363d'; e.currentTarget.style.color = '#e6edf3'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = '#21262d'; e.currentTarget.style.color = '#8b949e'; }}
+              >
+                تحميل نص تجريبي
+              </button>
+            </div>
           </div>
         ) : (
           /* ── Preview step ── */
