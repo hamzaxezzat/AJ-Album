@@ -70,9 +70,9 @@ export function PropertiesPanel({
       <div style={{
         display: 'flex', borderBottom: '1px solid #21262d', flexShrink: 0,
       }}>
+        <TabBtn active={tab === 'album'} onClick={() => setTab('album')}>الألبوم</TabBtn>
         <TabBtn active={tab === 'slide'} onClick={() => setTab('slide')}>الشريحة</TabBtn>
         <TabBtn active={tab === 'layers'} onClick={() => setTab('layers')}>الطبقات</TabBtn>
-        <TabBtn active={tab === 'album'} onClick={() => setTab('album')}>الألبوم</TabBtn>
       </div>
 
       {/* Tab content */}

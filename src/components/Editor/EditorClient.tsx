@@ -116,11 +116,31 @@ export function EditorClient({ albumId }: { albumId: string }) {
 
   const toolbarTextAlign = selectedBlockForToolbar?.styleOverrides?.textAlign ?? 'right';
 
+  const toolbarKashida = (() => {
+    if (!selectedBlockForToolbar) return false;
+    if ('kashidaEnabled' in selectedBlockForToolbar) {
+      return (selectedBlockForToolbar as { kashidaEnabled?: boolean }).kashidaEnabled !== false;
+    }
+    return false;
+  })();
+
   const handleToolbarStyle = useCallback((overrides: Partial<BlockStyleOverride>) => {
     const blockId = useEditorUIStore.getState().selectedBlockId;
     if (!blockId || !selectedSlide) return;
     blockUpdates.handleUpdateBlockStyleById(blockId, overrides);
   }, [selectedSlide, blockUpdates]);
+
+  const handleToggleKashida = useCallback(() => {
+    const blockId = useEditorUIStore.getState().selectedBlockId;
+    if (!blockId || !selectedSlide) return;
+    const updateSlide = useDocumentStore.getState().updateSlide;
+    updateSlide(selectedSlide.id, (slide) => {
+      const block = slide.blocks.find(b => b.id === blockId);
+      if (block && 'kashidaEnabled' in block) {
+        (block as { kashidaEnabled: boolean }).kashidaEnabled = !(block as { kashidaEnabled: boolean }).kashidaEnabled;
+      }
+    });
+  }, [selectedSlide]);
 
   // ── Loading / not-found ──
 
@@ -225,7 +245,9 @@ export function EditorClient({ albumId }: { albumId: string }) {
         editor={activeEditor}
         fontSize={toolbarFontSize}
         textAlign={toolbarTextAlign}
+        kashidaEnabled={toolbarKashida}
         onUpdateStyle={handleToolbarStyle}
+        onToggleKashida={handleToggleKashida}
       />
 
       {/* ── Body: 3-panel layout ── */}

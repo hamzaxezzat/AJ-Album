@@ -8,7 +8,9 @@ interface FloatingToolbarProps {
   editor: Editor | null;
   fontSize: number;
   textAlign: 'right' | 'left' | 'center' | 'justify';
+  kashidaEnabled: boolean;
   onUpdateStyle: (overrides: Partial<BlockStyleOverride>) => void;
+  onToggleKashida: () => void;
 }
 
 // ─── Color presets ───────────────────────────────────────────
@@ -35,7 +37,9 @@ export function FloatingToolbar({
   editor,
   fontSize,
   textAlign,
+  kashidaEnabled,
   onUpdateStyle,
+  onToggleKashida,
 }: FloatingToolbarProps) {
   const run = (cmd: () => void) => (e: React.MouseEvent) => {
     e.preventDefault();
@@ -106,6 +110,9 @@ export function FloatingToolbar({
         </ToolBtn>
         <ToolBtn active={textAlign === 'justify'} onClick={run(() => onUpdateStyle({ textAlign: 'justify' }))} title="ضبط">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="2" width="16" height="2" rx="1"/><rect x="0" y="7" width="16" height="2" rx="1"/><rect x="0" y="12" width="16" height="2" rx="1"/></svg>
+        </ToolBtn>
+        <ToolBtn active={kashidaEnabled} onClick={run(onToggleKashida)} title="كشيدة عربية">
+          <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--brand-font-family)', letterSpacing: -1 }}>كـ</span>
         </ToolBtn>
       </Group>
 
