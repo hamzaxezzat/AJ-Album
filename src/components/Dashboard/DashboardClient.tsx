@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { getSavedAlbums, useDocumentStore } from '@/store/documentStore';
 import { createDemoAlbum } from '@/lib/demoAlbum';
 import { deleteAlbumImages } from '@/lib/imageStore';
+import { CustomizationPanel } from './CustomizationPanel';
 import styles from './Dashboard.module.css';
 
 type AlbumSummary = {
@@ -170,6 +171,11 @@ export function DashboardClient() {
             ))}
           </div>
         )}
+
+        {/* Platform customization */}
+        <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid #21262d' }}>
+          <CustomizationPanel />
+        </div>
       </main>
     </div>
   );
