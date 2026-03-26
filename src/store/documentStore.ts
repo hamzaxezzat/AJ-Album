@@ -1,7 +1,46 @@
 'use client';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { Album, Slide } from '@/types/album';
+import type { Album, Slide, MainTitleBlock, BodyParagraphBlock } from '@/types/album';
+
+/**
+ * Migrate old album data to current schema.
+ * Fixes albums created before the portrait canvas change (1350×1080 → 1080×1350)
+ * and before typographyTokenRef was added to blocks.
+ */
+function migrateAlbum(album: Album): Album {
+  // 1. Fix landscape canvas to portrait
+  if (album.canvasDimensions.width === 1350 && album.canvasDimensions.height === 1080) {
+    album.canvasDimensions = { width: 1080, height: 1350, presetName: 'editorial-portrait-4:5' };
+  }
+
+  // 2. Fix blocks on each slide
+  for (const slide of album.slides) {
+    for (const block of slide.blocks) {
+      if (block.type === 'main_title') {
+        const b = block as MainTitleBlock;
+        // Add missing typographyTokenRef
+        if (!b.typographyTokenRef) b.typographyTokenRef = 'heading-l';
+        // Fix landscape-era block position (y > 0.5 means it was off-screen in portrait)
+        if (b.position.y > 0.5) {
+          b.position = { x: 0.05, y: 0.06, width: 0.90, height: 0.14 };
+        }
+      } else if (block.type === 'body_paragraph') {
+        const b = block as BodyParagraphBlock;
+        // Add missing typographyTokenRef
+        if (!b.typographyTokenRef) b.typographyTokenRef = 'body-m';
+        // Add missing kashidaEnabled
+        if (b.kashidaEnabled === undefined) b.kashidaEnabled = true;
+        // Fix landscape-era block position
+        if (b.position.y > 0.5) {
+          b.position = { x: 0.05, y: 0.22, width: 0.90, height: 0.55 };
+        }
+      }
+    }
+  }
+
+  return album;
+}
 
 interface DocumentState {
   album: Album | null;
@@ -98,7 +137,9 @@ export const useDocumentStore = create<DocumentState>()(
       const raw = localStorage.getItem(LS_KEY(albumId));
       if (!raw) return false;
       try {
-        const album = JSON.parse(raw) as Album;
+        const album = migrateAlbum(JSON.parse(raw) as Album);
+        // Save migrated version back so the next load is already clean
+        localStorage.setItem(LS_KEY(albumId), JSON.stringify(album));
         set((state) => {
           state.album = album;
         });
