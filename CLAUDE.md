@@ -291,7 +291,7 @@ is not applied to the root div.
 ### MVP-1 Notes
 - Storage: localStorage (`aj-album-{id}` keys). No database yet.
 - `getSavedAlbums()` in documentStore scans all `aj-album-*` localStorage keys
-- Script parser splits on bare digit lines; `suggestArchetype()` uses word count + number pattern heuristics
+- Script parser splits on bare digit lines (numbered format) or blank lines (paragraph format). Slide 1 is always `role: 'cover'`. `suggestArchetype()` detects bullet markers (•/-/●), numbered list markers (1./1)), key:value credential pairs, number+unit patterns, and short-line heuristics — in that priority order. Cover slides always get `highlighted_statement`
 - Canvas displayed via `useCanvasScale` hook (ResizeObserver) — responsive to window size, never hardcoded scale
 - Export button in editor POSTs to export-service at localhost:3001 — must be running separately
 - **Data migration**: `documentStore.loadFromLocalStorage` runs `migrateAlbum()` on every load, fixing old landscape albums (1350×1080 → 1080×1350), missing `typographyTokenRef`, and landscape-era block positions (y>0.5 → correct portrait positions)
