@@ -1,16 +1,17 @@
 import type { TextBoxBlock, RectangleBlock, EllipseBlock, ShapeStyleConfig } from '@/types/album';
 import { plainToRichText } from './slideFactory';
+import { SHAPE } from '../../../../config/defaults';
 
 function uid() {
   return Math.random().toString(36).slice(2);
 }
 
 const DEFAULT_SHAPE: ShapeStyleConfig = {
-  fillColor: '#D32F2F',
-  fillOpacity: 0.8,
-  strokeColor: '#000000',
-  strokeWidth: 0,
-  strokeOpacity: 1,
+  fillColor: SHAPE.fillColor,
+  fillOpacity: SHAPE.fillOpacity,
+  strokeColor: SHAPE.strokeColor,
+  strokeWidth: SHAPE.strokeWidth,
+  strokeOpacity: SHAPE.strokeOpacity,
   borderRadius: 0,
 };
 
@@ -36,7 +37,7 @@ export function makeRectangle(): RectangleBlock {
     position: { x: 0.2, y: 0.35, width: 0.6, height: 0.2 },
     zIndex: 15,
     visible: true,
-    shape: { ...DEFAULT_SHAPE, borderRadius: 4 },
+    shape: { ...DEFAULT_SHAPE, borderRadius: SHAPE.borderRadius },
   };
 }
 

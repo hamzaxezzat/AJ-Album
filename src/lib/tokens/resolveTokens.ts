@@ -1,5 +1,6 @@
 // src/lib/tokens/resolveTokens.ts
 import type { TokenResolutionContext, ResolvedTokens, TypographyProfile, BulletConnectorConfig } from '@/types/album';
+import { COLORS, THEME } from '../../../config/defaults';
 
 export function resolveTokens(ctx: TokenResolutionContext): ResolvedTokens {
   const { channelProfile, albumTheme, slideOverrides, blockOverrides } = ctx;
@@ -41,9 +42,9 @@ export function resolveTokens(ctx: TokenResolutionContext): ResolvedTokens {
 
   // Title/body color cascade: slide > album > defaults
   const titleColor = effectiveTheme.titleColor ?? effectiveTheme.primaryColor ?? accentPrimary;
-  const bodyColor = effectiveTheme.bodyColor ?? '#1A1A1A';
+  const bodyColor = effectiveTheme.bodyColor ?? COLORS.bodyColor;
 
-  const bulletSize = effectiveTheme.bulletSize ?? 8;
+  const bulletSize = effectiveTheme.bulletSize ?? THEME.bulletSize;
 
   const defaultConnector: BulletConnectorConfig = { enabled: false, style: 'solid', width: 1, color: '#CCCCCC' };
   const bulletConnector: BulletConnectorConfig = effectiveTheme.bulletConnector
@@ -53,10 +54,10 @@ export function resolveTokens(ctx: TokenResolutionContext): ResolvedTokens {
   return {
     accentPrimary,
     accentSecondary,
-    textOnAccent: '#FFFFFF',
-    background: '#FFFFFF',
-    textPrimary: '#1A1A1A',
-    textSecondary: '#4A4A4A',
+    textOnAccent: COLORS.textOnAccent,
+    background: COLORS.background,
+    textPrimary: COLORS.textPrimary,
+    textSecondary: COLORS.textSecondary,
     titleColor,
     bodyColor,
     typography,

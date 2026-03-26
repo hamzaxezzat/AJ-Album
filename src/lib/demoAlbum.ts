@@ -3,6 +3,7 @@
 // Used to seed the dashboard on first visit.
 
 import type { Album, Slide, MainTitleBlock, BodyParagraphBlock, RichTextContent } from '@/types/album';
+import { LAYOUT, CANVAS, THEME, COLORS, BANNER } from '../../config/defaults';
 
 function uid() {
   return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
@@ -32,7 +33,7 @@ function makeSlide(
       {
         id: uid(),
         type: 'main_title',
-        position: { x: 0.0556, y: 0.57, width: 0.8889, height: 0.06 },
+        position: { x: LAYOUT.marginX, y: LAYOUT.titleY, width: LAYOUT.contentWidth, height: LAYOUT.titleHeight },
         zIndex: 10,
         visible: true,
         typographyTokenRef: 'heading-l',
@@ -41,7 +42,7 @@ function makeSlide(
       {
         id: uid(),
         type: 'body_paragraph',
-        position: { x: 0.0556, y: 0.64, width: 0.8889, height: 0.27 },
+        position: { x: LAYOUT.marginX, y: LAYOUT.bodyY, width: LAYOUT.contentWidth, height: LAYOUT.bodyHeight },
         zIndex: 10,
         visible: true,
         typographyTokenRef: 'body-m',
@@ -50,17 +51,17 @@ function makeSlide(
       } as BodyParagraphBlock,
     ],
     image: {
-      rect: { x: 0, y: 0, width: 1, height: 0.55 },
+      rect: { x: 0, y: 0, width: 1, height: LAYOUT.imageHeight },
       objectFit: 'cover',
       focalPoint: { x: 0.5, y: 0.5 },
     },
     banner: {
-      family: 'classic-main',
-      position: 'none',
-      heightNormalized: 0.10,
+      family: BANNER.family,
+      position: BANNER.defaultPosition,
+      heightNormalized: BANNER.heightNormalized,
       backgroundColor: 'accent-primary',
       textColor: 'text-on-accent',
-      paddingNormalized: 0.04,
+      paddingNormalized: BANNER.paddingNormalized,
       overlap: 'none',
     },
     metadata: { createdAt: now, updatedAt: now },
@@ -104,16 +105,16 @@ export function createDemoAlbum(): Album {
     title: 'علي عبد اللهي',
     channelProfileId: 'aj-main',
     theme: {
-      primaryColor: '#D32F2F',
-      bannerFamilyId: 'classic-main',
-      defaultBannerPosition: 'none',
-      density: 'normal',
-      bulletStyle: 'square',
-      bulletDividers: false,
-      typographyTone: 'standard',
-      mode: 'production',
+      primaryColor: COLORS.accent,
+      bannerFamilyId: THEME.bannerFamilyId,
+      defaultBannerPosition: THEME.defaultBannerPosition,
+      density: THEME.density,
+      bulletStyle: THEME.bulletStyle,
+      bulletDividers: THEME.bulletDividers,
+      typographyTone: THEME.typographyTone,
+      mode: THEME.mode,
     },
-    canvasDimensions: { width: 1080, height: 1350, presetName: 'editorial-portrait-4:5' },
+    canvasDimensions: { width: CANVAS.width, height: CANVAS.height, presetName: CANVAS.presetName },
     slides,
     assets: [],
     scriptSource: 'علي عبد اللهي: العقل المدبر للتنسيق العسكري والأمن الداخلي في إيران',

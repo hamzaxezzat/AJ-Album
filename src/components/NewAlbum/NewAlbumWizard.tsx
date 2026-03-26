@@ -6,6 +6,7 @@ import { nanoid } from 'nanoid';
 import type { ChannelProfile, AlbumTheme, Album } from '@/types/album';
 import { parseScript, parsedSlideToSlide } from '@/lib/parser/parseScript';
 import { useDocumentStore } from '@/store/documentStore';
+import { CANVAS, THEME } from '../../../config/defaults';
 import ajMainRaw from '../../../config/brands/aj-main.json';
 import styles from './NewAlbumWizard.module.css';
 
@@ -71,13 +72,13 @@ export function NewAlbumWizard() {
 
     const theme: AlbumTheme = {
       primaryColor: channelProfile.colors.palette[0].hex,
-      bannerFamilyId: 'classic-main',
-      defaultBannerPosition: 'bottom',
-      density: 'normal',
-      bulletStyle: 'square',
-      bulletDividers: false,
-      typographyTone: 'standard',
-      mode: 'production',
+      bannerFamilyId: THEME.bannerFamilyId,
+      defaultBannerPosition: THEME.defaultBannerPosition,
+      density: THEME.density,
+      bulletStyle: THEME.bulletStyle,
+      bulletDividers: THEME.bulletDividers,
+      typographyTone: THEME.typographyTone,
+      mode: THEME.mode,
     };
 
     const slides = parsed.slides.map(s => parsedSlideToSlide(s, theme));
@@ -87,7 +88,7 @@ export function NewAlbumWizard() {
       title: parsed.albumTitle || 'ألبوم جديد',
       channelProfileId: channelProfile.id,
       theme,
-      canvasDimensions: { width: 1080, height: 1350, presetName: 'editorial-portrait-4:5' },
+      canvasDimensions: { width: CANVAS.width, height: CANVAS.height, presetName: CANVAS.presetName },
       slides,
       assets: [],
       scriptSource: scriptText,

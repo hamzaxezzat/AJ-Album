@@ -8,6 +8,7 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import type { JSONContent, Editor } from '@tiptap/react';
 import type { RichTextContent, ContentBlock, TypographyProfile, BlockStyleOverride } from '@/types/album';
+import { COLORS } from '../../../../config/defaults';
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -135,7 +136,7 @@ export function InlineTextEditor({
           ?? (hasKashida(block) ? 'justify' : token.textAlign),
         textJustify: hasKashida(block) ? ('kashida' as React.CSSProperties['textJustify']) : undefined,
         direction: token.direction,
-        color: overrides?.color ?? (block.type === 'main_title' ? '#D32F2F' : '#212121'),
+        color: overrides?.color ?? (block.type === 'main_title' ? COLORS.accent : COLORS.textPrimary),
         // Editing chrome
         outline: '2px solid #2196F3',
         outlineOffset: 2,

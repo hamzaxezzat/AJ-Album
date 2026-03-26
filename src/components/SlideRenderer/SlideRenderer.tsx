@@ -21,6 +21,7 @@ function isLightColor(hex: string): boolean {
 }
 import type { Slide, Album, ChannelProfile } from '@/types/album';
 import { resolveTokens, tokensToCssVars } from '@/lib/tokens/resolveTokens';
+import { LOGO } from '../../../config/defaults';
 import { BlockRenderer } from './BlockRenderer';
 import { BannerRenderer } from './BannerRenderer';
 import { FooterChrome } from './FooterChrome';
@@ -103,9 +104,9 @@ export function SlideRenderer({
 
         // Use concrete pixel values from tokens — same canvas coordinate system,
         // no CSS-var/zoom interaction issues.
-        const LOGO_MARGIN_TOP  = Math.round(tokens.canvasHeight * (90 / 1350));  // 90px
-        const LOGO_MARGIN_LEFT = Math.round(tokens.canvasWidth  * (90 / 1080));  // 90px
-        const LOGO_WIDTH       = Math.round(tokens.canvasWidth  * 0.09);         // ~97px
+        const LOGO_MARGIN_TOP  = Math.round(tokens.canvasHeight * (LOGO.marginTop / tokens.canvasHeight));
+        const LOGO_MARGIN_LEFT = Math.round(tokens.canvasWidth  * (LOGO.marginLeft / tokens.canvasWidth));
+        const LOGO_WIDTH       = Math.round(tokens.canvasWidth  * LOGO.widthFraction);
 
         return (
           // eslint-disable-next-line @next/next/no-img-element
