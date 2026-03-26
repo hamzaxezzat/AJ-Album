@@ -10,10 +10,16 @@ import { storeImage, loadImage } from '@/lib/imageStore';
  * and before typographyTokenRef was added to blocks.
  */
 function migrateAlbum(album: Album): Album {
-  const isLandscape = album.canvasDimensions.width === 1350 && album.canvasDimensions.height === 1080;
+  // Detect landscape orientation: width > height (e.g. 1350×1080)
+  const isLandscape = album.canvasDimensions.width > album.canvasDimensions.height;
 
-  // 1. Fix landscape canvas to portrait (one-time migration)
+  // 1. Fix landscape canvas to portrait
   if (isLandscape) {
+    album.canvasDimensions = { width: 1080, height: 1350, presetName: 'editorial-portrait-4:5' };
+  }
+
+  // 2. Ensure canvas dimensions are set (fallback for corrupt data)
+  if (!album.canvasDimensions.width || !album.canvasDimensions.height) {
     album.canvasDimensions = { width: 1080, height: 1350, presetName: 'editorial-portrait-4:5' };
   }
 

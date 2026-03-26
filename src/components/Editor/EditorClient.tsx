@@ -259,12 +259,9 @@ export function EditorClient({ albumId }: { albumId: string }) {
                 position: 'relative',
               }}>
                 <div style={{
-                  transform: `scale(${canvasScale})`,
-                  transformOrigin: 'top left',
-                  width: canvasW,
-                  height: canvasH,
+                  zoom: canvasScale,
                   position: 'relative',
-                }}>
+                } as React.CSSProperties}>
                   <SlideRenderer slide={selectedSlide} album={album} channelProfile={channelProfile} />
                   <CanvasInteractionLayer
                     slide={selectedSlide}
