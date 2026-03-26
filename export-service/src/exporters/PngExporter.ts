@@ -1,14 +1,8 @@
 // export-service/src/exporters/PngExporter.ts
 //
-// MVP-0 implementation: renders a slide to a PNG buffer via Puppeteer.
-//
-// MVP-0 renders inline HTML that validates the three irreversible bets:
-//   1. Arabic kashida works in headless Chromium
-//   2. Self-hosted fonts load correctly in Puppeteer
-//   3. Canvas dimensions and normalized coordinates produce correct layout
-//
-// MVP-1 will replace generateSlideHtml() with renderToStaticMarkup(<SlideRenderer>)
-// so the browser and Puppeteer share exactly the same markup.
+// Renders a slide to PNG via Puppeteer. Generates HTML that mirrors
+// the browser SlideRenderer exactly — reads actual block positions,
+// font sizes, styles, and content from the slide data.
 
 import puppeteer from 'puppeteer';
 import type { Browser } from 'puppeteer';
@@ -19,10 +13,6 @@ export class PngExporter implements SlideExporter {
 
   private browser: Browser | null = null;
 
-  /**
-   * Get or launch the shared browser instance.
-   * Reusing the browser across requests avoids the ~1-2s launch cost per slide.
-   */
   private async getBrowser(): Promise<Browser> {
     if (this.browser && this.browser.connected) {
       return this.browser;
@@ -34,10 +24,6 @@ export class PngExporter implements SlideExporter {
     return this.browser;
   }
 
-  /**
-   * Close the shared browser instance.
-   * Called during graceful shutdown.
-   */
   async close(): Promise<void> {
     if (this.browser) {
       await this.browser.close();
@@ -61,8 +47,6 @@ export class PngExporter implements SlideExporter {
     try {
       await page.setViewport({ width, height, deviceScaleFactor: scale });
       await page.setContent(html, { waitUntil: 'networkidle0' });
-
-      // Wait for fonts to load -- critical for Arabic kashida
       await page.evaluate(() => document.fonts.ready);
 
       const buffer = await page.screenshot({
@@ -81,228 +65,222 @@ export class PngExporter implements SlideExporter {
   }
 
   async exportAlbum(_album: Album, _ctx: ExportContext): Promise<ExportArtifact> {
-    // Full album ZIP export is implemented by ZipExporter on the client side
     throw new Error('Use ZipExporter for full album export');
   }
 }
 
-// ─── HTML generation ─────────────────────────────────────────
+// ─── HTML generation (data-driven, mirrors SlideRenderer) ────
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+type RichNode = {
+  type: string;
+  text?: string;
+  content?: RichNode[];
+  marks?: Array<{ type: string; attrs?: Record<string, string> }>;
+  attrs?: Record<string, unknown>;
+};
 
 function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): string {
   const { width, height } = ctx.canvasDimensions;
-  const accentColor = album.theme.primaryColor;
-  // Font base URL -- in production this points to the Next.js app's /fonts/ directory
+  const accentColor = album.theme?.primaryColor ?? '#D32F2F';
   const fontBase = process.env.FONT_BASE_URL ?? 'http://localhost:3000/fonts';
 
-  // Extract image data if present
+  // Resolve typography from channel profile if provided
+  const typo = (ctx as any).channelProfile?.typography?.tokens as Record<string, any> | undefined;
+
+  // Sort visible blocks by zIndex
+  const sortedBlocks = [...slide.blocks]
+    .filter(b => b.visible !== false)
+    .sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
+
+  // Image zone
+  const imageRect = slide.image?.rect ?? { x: 0, y: 0, width: 1, height: 0.55 };
   const hasImage = !!(slide.image?.asset?.url);
   const imageUrl = slide.image?.asset?.url ?? '';
-  const imageRect = slide.image?.rect;
+
+  // Build block HTML
+  const blocksHtml = sortedBlocks.map(block => {
+    const b = block as any;
+    const pos = block.position;
+    const posStyle = `position:absolute;`
+      + `right:calc(${width}px * ${pos.x});`
+      + `top:calc(${height}px * ${pos.y});`
+      + `width:calc(${width}px * ${pos.width});`
+      + `height:calc(${height}px * ${pos.height});`
+      + `z-index:${block.zIndex ?? 10};`
+      + `overflow:hidden;direction:rtl;`;
+
+    const typoRef = (b.typographyTokenRef as string) ?? '';
+    const typoToken = typo?.[typoRef] as any | undefined;
+    const overrides = block.styleOverrides ?? {};
+
+    const fontSize = (overrides as any).fontSize as number
+      ?? (typoToken?.fontSize as number) ?? 38;
+    const fontWeight = (typoToken?.fontWeight as number) ?? 400;
+    const lineHeight = (typoToken?.lineHeight as number) ?? 1.6;
+    const fontFamily = (typoToken?.fontFamily as string)
+      ?? "'IBM Plex Arabic', Cairo, sans-serif";
+
+    switch (block.type) {
+      case 'main_title': {
+        const color = (overrides as any).color as string ?? accentColor;
+        return `<div style="${posStyle}font-family:${fontFamily};font-size:${fontSize}px;font-weight:700;line-height:${lineHeight};color:${color};text-align:right;text-wrap:balance;">`
+          + renderRichContent(b.content as RichNode)
+          + `</div>`;
+      }
+
+      case 'subtitle': {
+        const color = (overrides as any).color as string ?? '#333333';
+        return `<div style="${posStyle}font-family:${fontFamily};font-size:${fontSize}px;font-weight:600;line-height:${lineHeight};color:${color};text-align:right;">`
+          + renderRichContent(b.content as RichNode)
+          + `</div>`;
+      }
+
+      case 'body_paragraph':
+      case 'text_box': {
+        const color = (overrides as any).color as string ?? '#1A1A1A';
+        const textAlign = (overrides as any).textAlign as string ?? 'justify';
+        const kashida = (b.kashidaEnabled !== false);
+        return `<div style="${posStyle}font-family:${fontFamily};font-size:${fontSize}px;font-weight:${fontWeight};line-height:${lineHeight};color:${color};text-align:${textAlign};${kashida ? 'text-justify:kashida;' : ''}">`
+          + renderRichContent(b.content as RichNode)
+          + `</div>`;
+      }
+
+      case 'highlighted_phrase': {
+        const bgColor = (b.backgroundColor as string) ?? '#FFEB3B';
+        const textColor = (b.textColor as string) ?? '#1A1A1A';
+        return `<div style="${posStyle}font-family:${fontFamily};font-size:${fontSize}px;font-weight:700;line-height:${lineHeight};color:${textColor};background:${bgColor};padding:12px 16px;text-align:right;">`
+          + renderRichContent(b.content as RichNode)
+          + `</div>`;
+      }
+
+      case 'bullet_list': {
+        const items = (b.items as Array<{ content: RichNode }>) ?? [];
+        const bulletColor = (b.bulletColor as string) ?? accentColor;
+        const itemsHtml = items.map(item =>
+          `<li style="margin-block-end:0.4em;padding-inline-end:8px;">`
+          + renderRichContent(item.content)
+          + `</li>`
+        ).join('');
+        return `<div style="${posStyle}font-family:${fontFamily};font-size:${fontSize}px;font-weight:${fontWeight};line-height:${lineHeight};color:#1A1A1A;text-align:right;">`
+          + `<ul style="margin:0;padding-inline-end:1.4em;padding-inline-start:0;list-style-type:disc;color:${bulletColor};">`
+          + `<span style="color:#1A1A1A;">${itemsHtml}</span></ul></div>`;
+      }
+
+      case 'numbered_list': {
+        const items = (b.items as Array<{ content: RichNode }>) ?? [];
+        const itemsHtml = items.map(item =>
+          `<li style="margin-block-end:0.4em;">`
+          + renderRichContent(item.content)
+          + `</li>`
+        ).join('');
+        return `<div style="${posStyle}font-family:${fontFamily};font-size:${fontSize}px;font-weight:${fontWeight};line-height:${lineHeight};color:#1A1A1A;text-align:right;">`
+          + `<ol style="margin:0;padding-inline-end:1.4em;padding-inline-start:0;">${itemsHtml}</ol></div>`;
+      }
+
+      case 'credential_row': {
+        const rows = (b.rows as Array<{ label: string; value: string }>) ?? [];
+        const rowsHtml = rows.map(r =>
+          `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.08);">`
+          + `<span style="font-weight:600;color:${accentColor};">${escapeHtml(r.label)}</span>`
+          + `<span style="color:#1A1A1A;">${escapeHtml(r.value)}</span>`
+          + `</div>`
+        ).join('');
+        return `<div style="${posStyle}font-family:${fontFamily};font-size:${fontSize}px;line-height:${lineHeight};">${rowsHtml}</div>`;
+      }
+
+      case 'stat_value': {
+        const value = (b.value as string) ?? '';
+        const label = (b.label as string) ?? '';
+        const statAccent = (b.accentColor as string) ?? accentColor;
+        return `<div style="${posStyle}font-family:${fontFamily};text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;">`
+          + `<div style="font-size:${fontSize * 1.8}px;font-weight:700;color:${statAccent};line-height:1.2;">${escapeHtml(value)}</div>`
+          + `<div style="font-size:${fontSize * 0.7}px;color:#666;margin-top:4px;">${escapeHtml(label)}</div>`
+          + `</div>`;
+      }
+
+      case 'quote_block': {
+        const quoteAccent = (b.accentColor as string) ?? accentColor;
+        return `<div style="${posStyle}font-family:${fontFamily};font-size:${fontSize}px;font-weight:${fontWeight};line-height:${lineHeight};color:#1A1A1A;border-right:4px solid ${quoteAccent};padding-right:16px;font-style:italic;">`
+          + renderRichContent(b.content as RichNode)
+          + (b.attribution ? `<div style="margin-top:8px;font-size:${fontSize * 0.7}px;color:#666;font-style:normal;">— ${escapeHtml(b.attribution as string)}</div>` : '')
+          + `</div>`;
+      }
+
+      case 'divider': {
+        const color = (b.color as string) ?? '#CCCCCC';
+        const thickness = (b.thickness as number) ?? 0.002;
+        return `<div style="${posStyle}display:flex;align-items:center;justify-content:center;">`
+          + `<div style="width:100%;height:${thickness * height}px;background:${color};"></div></div>`;
+      }
+
+      case 'rectangle': {
+        const shape = (b.shape as any) ?? {};
+        return `<div style="${posStyle}background:${shape.fillColor ?? '#D32F2F'};opacity:${shape.fillOpacity ?? 0.8};`
+          + `${(shape.strokeWidth as number) > 0 ? `border:${shape.strokeWidth}px solid ${shape.strokeColor ?? '#000'};` : ''}`
+          + `border-radius:${shape.borderRadius ?? 0}px;"></div>`;
+      }
+
+      case 'ellipse': {
+        const shape = (b.shape as any) ?? {};
+        return `<div style="${posStyle}background:${shape.fillColor ?? '#D32F2F'};opacity:${shape.fillOpacity ?? 0.8};`
+          + `${(shape.strokeWidth as number) > 0 ? `border:${shape.strokeWidth}px solid ${shape.strokeColor ?? '#000'};` : ''}`
+          + `border-radius:50%;"></div>`;
+      }
+
+      default:
+        return '';
+    }
+  }).join('\n    ');
+
+  // Banner
+  const bannerPos = slide.banner?.position ?? 'none';
+  const bannerHeight = slide.banner?.heightNormalized ?? 0.1;
+  let bannerHtml = '';
+  if (bannerPos !== 'none') {
+    const bannerTop = bannerPos === 'top' ? '0'
+      : bannerPos === 'bottom' ? `calc(${height}px - calc(${height}px * ${bannerHeight}) - calc(${height}px * 0.074))`
+      : bannerPos === 'float-top' ? `calc(${height}px * ${imageRect.height} - calc(${height}px * ${bannerHeight / 2}))`
+      : `calc(${height}px * ${imageRect.height} + calc(${height}px * 0.02))`;
+    bannerHtml = `<div style="position:absolute;left:0;right:0;top:${bannerTop};height:calc(${height}px * ${bannerHeight});background:${accentColor};z-index:20;"></div>`;
+  }
+
+  // Footer
+  const totalSlides = (ctx as any).totalSlides as number ?? slide.number;
+  const dotsHtml = Array.from({ length: totalSlides }, (_, i) =>
+    `<div style="width:8px;height:8px;border-radius:50%;background:${i === slide.number - 1 ? accentColor : '#CCC'};"></div>`
+  ).join('');
 
   return `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=${width}, height=${height}">
   <style>
-    /*
-     * Self-hosted fonts -- must be available in this container.
-     * NEVER load from Google Fonts: fonts must work offline in Puppeteer.
-     */
-    @font-face {
-      font-family: 'IBM Plex Arabic';
-      src: url('${fontBase}/IBMPlexArabic-Regular.woff2') format('woff2');
-      font-weight: 400;
-      font-display: block;
-    }
-    @font-face {
-      font-family: 'IBM Plex Arabic';
-      src: url('${fontBase}/IBMPlexArabic-SemiBold.woff2') format('woff2');
-      font-weight: 600;
-      font-display: block;
-    }
-    @font-face {
-      font-family: 'IBM Plex Arabic';
-      src: url('${fontBase}/IBMPlexArabic-Bold.woff2') format('woff2');
-      font-weight: 700;
-      font-display: block;
-    }
-    @font-face {
-      font-family: 'Cairo';
-      src: url('${fontBase}/Cairo-Regular.woff2') format('woff2');
-      font-weight: 400;
-      font-display: block;
-    }
-    @font-face {
-      font-family: 'Cairo';
-      src: url('${fontBase}/Cairo-SemiBold.woff2') format('woff2');
-      font-weight: 600;
-      font-display: block;
-    }
-    @font-face {
-      font-family: 'Cairo';
-      src: url('${fontBase}/Cairo-Bold.woff2') format('woff2');
-      font-weight: 700;
-      font-display: block;
-    }
-
-    /*
-     * Canvas dimensions as CSS custom properties -- same pattern as the browser renderer.
-     * All positions use calc(var(--canvas-width) * N) to stay dimension-agnostic.
-     * This guarantees browser preview and Puppeteer export share identical layout logic.
-     */
-    :root {
-      --canvas-width: ${width}px;
-      --canvas-height: ${height}px;
-    }
-
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      width: var(--canvas-width);
-      height: var(--canvas-height);
-      overflow: hidden;
-      background: #ffffff;
-      font-family: 'IBM Plex Arabic', Cairo, sans-serif;
-      direction: rtl;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    .slide {
-      position: relative;
-      width: var(--canvas-width);
-      height: var(--canvas-height);
-      background: #ffffff;
-      overflow: hidden;
-    }
-
-    /* Image zone */
-    .image-zone {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: ${imageRect ? `calc(var(--canvas-height) * ${imageRect.height})` : 'calc(var(--canvas-height) * 0.54)'};
-      background-color: #E0E0E0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #9E9E9E;
-      font-size: 18px;
-      overflow: hidden;
-      z-index: 1;
-    }
-
-    .image-zone img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    /* Title block */
-    .title {
-      position: absolute;
-      right: calc(var(--canvas-width) * 0.04);
-      top: calc(var(--canvas-height) * 0.60);
-      width: calc(var(--canvas-width) * 0.92);
-      height: calc(var(--canvas-height) * 0.12);
-      font-family: 'Cairo', 'IBM Plex Arabic', sans-serif;
-      font-size: 34px;
-      font-weight: 700;
-      line-height: 1.3;
-      color: ${accentColor};
-      text-align: right;
-      /*
-       * text-wrap: balance improves headline composition for Arabic.
-       * Chromium supports this -- it is the architectural reason Puppeteer is required.
-       */
-      text-wrap: balance;
-      z-index: 10;
-      overflow: hidden;
-    }
-
-    /* Body paragraph */
-    .body {
-      position: absolute;
-      right: calc(var(--canvas-width) * 0.04);
-      top: calc(var(--canvas-height) * 0.73);
-      width: calc(var(--canvas-width) * 0.92);
-      height: calc(var(--canvas-height) * 0.17);
-      font-family: 'IBM Plex Arabic', sans-serif;
-      font-size: 18px;
-      font-weight: 400;
-      line-height: 1.7;
-      color: #1A1A1A;
-      text-align: justify;
-      /*
-       * THE CRITICAL KASHIDA TEST.
-       * This property extends Arabic letter connections to fill justified lines.
-       * It is only supported in real Chromium -- never in html2canvas, SVG, or Canvas.
-       * If this property renders correctly in the Puppeteer PNG, MVP-0 is validated.
-       */
-      text-justify: kashida;
-      overflow: hidden;
-      z-index: 10;
-    }
-
-    /* Banner strip */
-    .banner {
-      position: absolute;
-      left: 0;
-      right: 0;
-      height: calc(var(--canvas-height) * 0.10);
-      background-color: ${accentColor};
-      bottom: calc(var(--canvas-height) * 0.078);
-      display: flex;
-      align-items: center;
-      padding: 0 calc(var(--canvas-width) * 0.04);
-      z-index: 20;
-    }
-
-    /* Footer chrome */
-    .footer {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: calc(var(--canvas-height) * 0.074);
-      background: #ffffff;
-      border-top: 1px solid rgba(0,0,0,0.08);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 calc(var(--canvas-width) * 0.03);
-      direction: rtl;
-      z-index: 100;
-    }
-
-    .logo-placeholder {
-      background: ${accentColor};
-      color: white;
-      font-family: 'IBM Plex Arabic', sans-serif;
-      font-size: 12px;
-      font-weight: 700;
-      padding: 4px 12px;
-      border-radius: 2px;
-    }
-
-    .slide-number {
-      font-family: 'IBM Plex Arabic', sans-serif;
-      font-size: 12px;
-      color: #999999;
-      direction: ltr;
-    }
+    @font-face { font-family:'IBM Plex Arabic'; src:url('${fontBase}/IBMPlexArabic-Regular.woff2') format('woff2'); font-weight:400; font-display:block; }
+    @font-face { font-family:'IBM Plex Arabic'; src:url('${fontBase}/IBMPlexArabic-SemiBold.woff2') format('woff2'); font-weight:600; font-display:block; }
+    @font-face { font-family:'IBM Plex Arabic'; src:url('${fontBase}/IBMPlexArabic-Bold.woff2') format('woff2'); font-weight:700; font-display:block; }
+    @font-face { font-family:'Cairo'; src:url('${fontBase}/Cairo-Regular.woff2') format('woff2'); font-weight:400; font-display:block; }
+    @font-face { font-family:'Cairo'; src:url('${fontBase}/Cairo-SemiBold.woff2') format('woff2'); font-weight:600; font-display:block; }
+    @font-face { font-family:'Cairo'; src:url('${fontBase}/Cairo-Bold.woff2') format('woff2'); font-weight:700; font-display:block; }
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    body { width:${width}px; height:${height}px; overflow:hidden; background:#fff; font-family:'IBM Plex Arabic',Cairo,sans-serif; direction:rtl; -webkit-font-smoothing:antialiased; }
+    .slide { position:relative; width:${width}px; height:${height}px; background:#fff; overflow:hidden; }
+    .image-zone { position:absolute; top:calc(${height}px * ${imageRect.y}); left:calc(${width}px * ${imageRect.x}); width:calc(${width}px * ${imageRect.width}); height:calc(${height}px * ${imageRect.height}); background:#E0E0E0; overflow:hidden; z-index:1; display:flex; align-items:center; justify-content:center; color:#9E9E9E; font-size:20px; }
+    .image-zone img { width:100%; height:100%; object-fit:${slide.image?.objectFit ?? 'cover'}; }
+    .footer { position:absolute; bottom:0; left:0; right:0; height:calc(${height}px * 0.074); background:#fff; border-top:1px solid rgba(0,0,0,0.08); display:flex; align-items:center; justify-content:space-between; padding:0 calc(${width}px * 0.03); direction:rtl; z-index:100; }
+    .dots { display:flex; gap:6px; align-items:center; }
   </style>
 </head>
 <body>
   <div class="slide">
-    <div class="image-zone">${hasImage ? `<img src="${escapeHtml(imageUrl)}" alt="" />` : 'صورة'}</div>
-    <div class="title">${renderRichContent(getSlideTitle(slide))}</div>
-    <div class="body">${renderRichContent(getSlideBody(slide))}</div>
-    <div class="banner"></div>
+    <div class="image-zone">${hasImage ? `<img src="${escapeHtml(imageUrl)}" alt="" />` : ''}</div>
+    ${blocksHtml}
+    ${bannerHtml}
     <div class="footer">
-      <div class="logo-placeholder">الجزيرة</div>
-      <div class="slide-number">${slide.number}</div>
+      <div style="font-family:'IBM Plex Arabic';font-size:14px;color:#888;direction:ltr;">
+        @aljazeerachannel &nbsp; @ajarabic
+      </div>
+      <div class="dots">${dotsHtml}</div>
     </div>
   </div>
 </body>
@@ -311,83 +289,46 @@ function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): stri
 
 // ─── Helpers ─────────────────────────────────────────────────
 
-function getSlideTitle(slide: Slide): TextNode | string {
-  const titleBlock = slide.blocks.find(b => b.type === 'main_title');
-  if (!titleBlock || titleBlock.type !== 'main_title') {
-    return 'عنوان الشريحة';
-  }
-  return (titleBlock.content as TextNode) ?? 'عنوان الشريحة';
-}
-
-function getSlideBody(slide: Slide): TextNode | string {
-  const bodyBlock = slide.blocks.find(b => b.type === 'body_paragraph');
-  if (!bodyBlock || bodyBlock.type !== 'body_paragraph') {
-    return 'نص الشريحة الذي يحتوي على معلومات تفصيلية حول الموضوع المطروح للنقاش.';
-  }
-  return (bodyBlock.content as TextNode) ?? '';
-}
-
-type TextNode = { type: string; text?: string; content?: TextNode[]; marks?: { type: string; attrs?: Record<string, unknown> }[] };
-
-/**
- * Render TipTap/ProseMirror JSON content to HTML.
- * Supports bold, italic, strike, highlight, and paragraph/text nodes.
- */
-function renderRichContent(content: TextNode | string): string {
+function renderRichContent(content: RichNode | string | undefined | null): string {
+  if (!content) return '';
   if (typeof content === 'string') return escapeHtml(content);
-  if (!content || content.type !== 'doc') {
-    return escapeHtml(extractPlainText(content));
-  }
+  if (content.type !== 'doc') return escapeHtml(extractPlainText(content));
   return renderNodes(content.content ?? []);
 }
 
-function renderNodes(nodes: TextNode[]): string {
+function renderNodes(nodes: RichNode[]): string {
   return nodes.map(node => {
     if (node.type === 'text') {
       let html = escapeHtml(node.text ?? '');
       if (node.marks) {
         for (const mark of node.marks) {
           switch (mark.type) {
-            case 'bold':
-              html = `<strong>${html}</strong>`;
-              break;
-            case 'italic':
-              html = `<em>${html}</em>`;
-              break;
-            case 'strike':
-              html = `<s>${html}</s>`;
-              break;
+            case 'bold': html = `<strong>${html}</strong>`; break;
+            case 'italic': html = `<em>${html}</em>`; break;
+            case 'strike': html = `<s>${html}</s>`; break;
+            case 'underline': html = `<u>${html}</u>`; break;
             case 'highlight':
-              html = `<mark style="background:${escapeHtml(String(mark.attrs?.color ?? '#FFEB3B'))}">${html}</mark>`;
+              html = `<mark style="background:${escapeHtml(mark.attrs?.color ?? '#FFEB3B')};padding:2px 4px;">${html}</mark>`;
+              break;
+            case 'textStyle':
+              if (mark.attrs?.color) html = `<span style="color:${escapeHtml(mark.attrs.color)}">${html}</span>`;
               break;
           }
         }
       }
       return html;
     }
-    if (node.type === 'paragraph') {
-      return `<p>${renderNodes(node.content ?? [])}</p>`;
-    }
-    if (node.type === 'bulletList') {
-      return `<ul>${renderNodes(node.content ?? [])}</ul>`;
-    }
-    if (node.type === 'orderedList') {
-      return `<ol>${renderNodes(node.content ?? [])}</ol>`;
-    }
-    if (node.type === 'listItem') {
-      return `<li>${renderNodes(node.content ?? [])}</li>`;
-    }
-    if (node.type === 'hardBreak') {
-      return '<br>';
-    }
-    if (node.content) {
-      return renderNodes(node.content);
-    }
+    if (node.type === 'paragraph') return `<p style="margin:0;margin-block-end:0.3em;">${renderNodes(node.content ?? [])}</p>`;
+    if (node.type === 'bulletList') return `<ul style="margin:0;padding-inline-end:1.4em;padding-inline-start:0;list-style-type:disc;">${renderNodes(node.content ?? [])}</ul>`;
+    if (node.type === 'orderedList') return `<ol style="margin:0;padding-inline-end:1.4em;padding-inline-start:0;">${renderNodes(node.content ?? [])}</ol>`;
+    if (node.type === 'listItem') return `<li style="margin-block-end:0.3em;">${renderNodes(node.content ?? [])}</li>`;
+    if (node.type === 'hardBreak') return '<br>';
+    if (node.content) return renderNodes(node.content);
     return '';
   }).join('');
 }
 
-function extractPlainText(content: TextNode | undefined): string {
+function extractPlainText(content: RichNode | undefined): string {
   if (!content) return '';
   if (content.type === 'text') return content.text ?? '';
   if (content.content) return content.content.map(extractPlainText).join('');
@@ -395,9 +336,5 @@ function extractPlainText(content: TextNode | undefined): string {
 }
 
 function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

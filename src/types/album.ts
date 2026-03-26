@@ -558,6 +558,7 @@ export interface ExportContext {
   canvasDimensions: CanvasConfig;
   channelProfile: ChannelProfile;
   scale?: number;   // default 2 for retina
+  totalSlides?: number;
 }
 
 export interface ExportArtifact {

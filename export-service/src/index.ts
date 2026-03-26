@@ -70,6 +70,7 @@ app.post('/export/slide/png', async (req: Request, res: Response) => {
       canvasDimensions: album.canvasDimensions,
       channelProfile,
       scale,
+      totalSlides: album.slides?.length ?? 1,
     });
 
     res.set('Content-Type', 'image/png');
