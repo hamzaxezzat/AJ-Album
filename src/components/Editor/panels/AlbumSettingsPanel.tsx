@@ -66,19 +66,19 @@ export function AlbumSettingsPanel({ theme, channelProfile, onUpdateTheme }: Alb
   const handleApplyTheme = (saved: SavedTheme) => {
     const s = saved.theme;
     onUpdateTheme(t => {
-      if (s.primaryColor) t.primaryColor = s.primaryColor;
-      if (s.titleColor) t.titleColor = s.titleColor;
-      if (s.bodyColor) t.bodyColor = s.bodyColor;
-      if (s.titleFontSize) t.titleFontSize = s.titleFontSize;
-      if (s.bodyFontSize) t.bodyFontSize = s.bodyFontSize;
-      if (s.bulletStyle) t.bulletStyle = s.bulletStyle as BulletStyle;
-      if (s.bulletSize) t.bulletSize = s.bulletSize as number;
+      if (s.primaryColor !== undefined) t.primaryColor = s.primaryColor as string;
+      if (s.titleColor !== undefined) t.titleColor = s.titleColor as string;
+      if (s.bodyColor !== undefined) t.bodyColor = s.bodyColor as string;
+      if (s.titleFontSize !== undefined) t.titleFontSize = s.titleFontSize as number;
+      if (s.bodyFontSize !== undefined) t.bodyFontSize = s.bodyFontSize as number;
+      if (s.bulletStyle !== undefined) t.bulletStyle = s.bulletStyle as BulletStyle;
+      if (s.bulletSize !== undefined) t.bulletSize = s.bulletSize as number;
       if (s.bulletDividers !== undefined) t.bulletDividers = s.bulletDividers as boolean;
-      if (s.bulletConnector) t.bulletConnector = s.bulletConnector as BulletConnectorConfig;
-      if (s.defaultBannerPosition) t.defaultBannerPosition = s.defaultBannerPosition as BannerPosition;
-      if (s.density) t.density = s.density as AlbumTheme['density'];
+      if (s.bulletConnector !== undefined) t.bulletConnector = s.bulletConnector as BulletConnectorConfig;
+      if (s.defaultBannerPosition !== undefined) t.defaultBannerPosition = s.defaultBannerPosition as BannerPosition;
+      if (s.density !== undefined) t.density = s.density as AlbumTheme['density'];
     });
-    setHexInput(s.titleColor as string ?? s.primaryColor as string ?? effectiveTitleColor);
+    setHexInput((s.titleColor as string) ?? (s.primaryColor as string) ?? effectiveTitleColor);
     if (s.bulletConnector) setConnectorHexInput((s.bulletConnector as BulletConnectorConfig).color);
   };
 

@@ -498,10 +498,22 @@ export function SettingsEditor() {
   }, []);
 
   const handleSaveTheme = useCallback((name: string) => {
+    // Always save resolved values so applying the theme works even if
+    // the user didn't explicitly change every field
+    const headingToken = channelProfile.typography['heading-l'];
+    const bodyToken = channelProfile.typography['body-m'];
+    const resolved = {
+      ...theme,
+      primaryColor: theme.primaryColor,
+      titleColor: theme.titleColor ?? theme.primaryColor,
+      titleFontSize: theme.titleFontSize ?? headingToken.fontSize,
+      bodyFontSize: theme.bodyFontSize ?? bodyToken.fontSize,
+      bodyColor: theme.bodyColor ?? COLORS.bodyColor,
+    };
     const saved: SavedTheme = {
       id: Math.random().toString(36).slice(2),
       name,
-      theme: { ...theme },
+      theme: resolved,
       createdAt: new Date().toISOString(),
     };
     saveTheme(saved);
