@@ -64,6 +64,10 @@ const mockChannelProfile: ChannelProfile = {
     fontTokenRef: 'body-s',
   },
   typography: mockTypography,
+  primaryFontFamily: "'Al-Jazeera', 'IBM Plex Arabic', Cairo, sans-serif",
+  fontFiles: [
+    { family: 'Al-Jazeera', weight: 400, url: '/fonts/AlJazeera-Regular.ttf', format: 'truetype' },
+  ],
   availableArchetypes: ['standard_title_body'],
   defaultDensity: 'normal',
   brandLocks: {

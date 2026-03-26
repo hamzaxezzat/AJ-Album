@@ -14,18 +14,8 @@ interface RichTextEditorProps {
   onChange: (content: RichTextContent) => void;
   placeholder?: string;
   minHeight?: number;
-}
-
-/** Extract plain text from a RichTextContent/JSONContent for comparison purposes. */
-function extractText(content: RichTextContent | JSONContent | null | undefined): string {
-  if (!content) return '';
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function walk(node: any): string {
-    if (node.type === 'text') return node.text ?? '';
-    if (node.content) return (node.content as any[]).map(walk).join('');
-    return '';
-  }
-  return walk(content);
+  /** Increment this to force the editor to re-sync even if text didn't change (e.g. after reformat). */
+  resetKey?: number;
 }
 
 const PRESET_COLORS = [
@@ -35,20 +25,21 @@ const PRESET_COLORS = [
   { label: 'رمادي', value: '#757575' },
 ];
 
+const EMPTY_DOC: JSONContent = { type: 'doc', content: [{ type: 'paragraph' }] };
+
 export function RichTextEditor({
   value,
   onChange,
   placeholder = 'اكتب هنا...',
   minHeight = 80,
+  resetKey,
 }: RichTextEditorProps) {
-  // Keep a stable ref to the latest onChange so the TipTap onUpdate callback
-  // (which is created once and never recreated) always calls the current version.
   const onChangeRef = useRef(onChange);
   useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
 
-  // Flag to suppress onUpdate while we're doing a programmatic setContent.
-  // Prevents spurious store updates when switching slides.
   const isProgrammaticUpdate = useRef(false);
+  // Track JSON of the last value we emitted so we can skip echo updates.
+  const lastEmittedJson = useRef<string>('');
 
   const editor = useEditor({
     extensions: [
@@ -58,7 +49,7 @@ export function RichTextEditor({
       Color,
     ],
     immediatelyRender: false,
-    content: (value ?? { type: 'doc', content: [{ type: 'paragraph' }] }) as JSONContent,
+    content: (value ?? EMPTY_DOC) as JSONContent,
     editorProps: {
       attributes: {
         dir: 'rtl',
@@ -69,63 +60,70 @@ export function RichTextEditor({
       },
     },
     onUpdate({ editor }) {
-      // Only propagate changes that come from user input, not from setContent calls.
       if (isProgrammaticUpdate.current) return;
-      onChangeRef.current(editor.getJSON() as RichTextContent);
+      const json = editor.getJSON();
+      const str = JSON.stringify(json);
+      lastEmittedJson.current = str;
+      onChangeRef.current(json as RichTextContent);
     },
   });
 
-  // Sync external value changes (e.g. switching slides).
-  // We only call setContent when the incoming value's TEXT differs from what
-  // we last emitted via onChange. This prevents the echo loop:
-  //   user types → onChange → updateSlide → value prop changes → setContent → onUpdate → loop
+  // Sync external value changes (e.g. switching slides, reformatting from parent).
+  // Compare full JSON so structural changes (paragraphs ↔ lists) are applied.
   useEffect(() => {
     if (!editor) return;
-    // Compare raw text content only (ignore TipTap-added attrs like textAlign:null)
-    const incomingText = extractText(value);
-    const currentText = extractText(editor.getJSON() as RichTextContent);
-    if (incomingText === currentText) return;
+    const incoming = value ?? EMPTY_DOC;
+    const incomingStr = JSON.stringify(incoming);
+    // Skip if this change originated from our own onUpdate (echo loop prevention).
+    if (incomingStr === lastEmittedJson.current) return;
     isProgrammaticUpdate.current = true;
-    editor.commands.setContent(
-      (value ?? { type: 'doc', content: [{ type: 'paragraph' }] }) as JSONContent,
-    );
+    editor.commands.setContent(incoming as JSONContent);
     isProgrammaticUpdate.current = false;
-  }, [value, editor]);
+    lastEmittedJson.current = incomingStr;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, editor, resetKey]);
 
   if (!editor) return null;
+
+  const btn = (active: boolean, handler: () => void, title: string, children: React.ReactNode) => (
+    <button
+      type="button"
+      className={`${styles.btn} ${active ? styles.btnActive : ''}`}
+      onMouseDown={(e) => { e.preventDefault(); handler(); }}
+      title={title}
+    >
+      {children}
+    </button>
+  );
 
   return (
     <div className={styles.root}>
       {/* Toolbar */}
       <div className={styles.toolbar}>
-        <button
-          type="button"
-          className={`${styles.btn} ${editor.isActive('bold') ? styles.btnActive : ''}`}
-          onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().toggleBold().run(); }}
-          title="عريض"
-        >
-          <strong>B</strong>
-        </button>
-        <button
-          type="button"
-          className={`${styles.btn} ${editor.isActive('italic') ? styles.btnActive : ''}`}
-          onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().toggleItalic().run(); }}
-          title="مائل"
-        >
-          <em>I</em>
-        </button>
-        <button
-          type="button"
-          className={`${styles.btn} ${editor.isActive('strike') ? styles.btnActive : ''}`}
-          onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().toggleStrike().run(); }}
-          title="يتوسطه خط"
-        >
-          <s>S</s>
-        </button>
+        {/* Text format */}
+        {btn(editor.isActive('bold'), () => editor.chain().focus().toggleBold().run(), 'عريض', <strong>B</strong>)}
+        {btn(editor.isActive('italic'), () => editor.chain().focus().toggleItalic().run(), 'مائل', <em>I</em>)}
+        {btn(editor.isActive('strike'), () => editor.chain().focus().toggleStrike().run(), 'يتوسطه خط', <s>S</s>)}
 
         <span className={styles.divider} />
 
-        {/* Highlight (yellow) */}
+        {/* Lists */}
+        {btn(
+          editor.isActive('bulletList'),
+          () => editor.chain().focus().toggleBulletList().run(),
+          'قائمة نقطية',
+          <span style={{ fontSize: 13 }}>•≡</span>,
+        )}
+        {btn(
+          editor.isActive('orderedList'),
+          () => editor.chain().focus().toggleOrderedList().run(),
+          'قائمة مرقمة',
+          <span style={{ fontSize: 13 }}>1≡</span>,
+        )}
+
+        <span className={styles.divider} />
+
+        {/* Highlight */}
         <button
           type="button"
           className={`${styles.btn} ${editor.isActive('highlight', { color: '#FFF176' }) ? styles.btnActive : ''}`}

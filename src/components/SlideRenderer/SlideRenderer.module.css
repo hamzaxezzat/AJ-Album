@@ -12,7 +12,7 @@
   height: var(--canvas-height);
   overflow: hidden;
   background-color: var(--background);
-  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  font-family: var(--brand-font-family);
   direction: rtl;
   /* Prevent subpixel rendering differences between browser and Puppeteer */
   -webkit-font-smoothing: antialiased;

@@ -31,10 +31,22 @@ function nodeToHtml(node: DocNode): string {
   switch (node.type) {
     case 'paragraph': {
       const inner = (node.content ?? []).map(n => nodeToHtml(n)).join('');
-      return `<p style="margin:0">${inner || '&nbsp;'}</p>`;
+      return `<p style="margin:0;margin-block-end:0.25em">${inner || '&nbsp;'}</p>`;
     }
     case 'hardBreak':
       return '<br />';
+    case 'bulletList': {
+      const items = (node.content ?? []).map(n => nodeToHtml(n)).join('');
+      return `<ul style="margin:0;padding-inline-end:1.4em;padding-inline-start:0;list-style-type:disc">${items}</ul>`;
+    }
+    case 'orderedList': {
+      const items = (node.content ?? []).map(n => nodeToHtml(n)).join('');
+      return `<ol style="margin:0;padding-inline-end:1.4em;padding-inline-start:0">${items}</ol>`;
+    }
+    case 'listItem': {
+      const inner = (node.content ?? []).map(n => nodeToHtml(n)).join('');
+      return `<li style="margin-block-end:0.3em">${inner}</li>`;
+    }
     case 'text': {
       let html = escapeHtml(node.text ?? '');
       if (node.marks) {
@@ -82,19 +94,22 @@ function richTextToHtml(content: RichTextContent | null | undefined): string {
 
 // ─── Typography helper ───────────────────────────────────────
 
+import type { BlockStyleOverride } from '@/types/album';
+
 function typoStyle(
   tokenRef: string,
   typography: TypographyProfile,
+  overrides?: BlockStyleOverride,
 ): React.CSSProperties {
   const token = typography[tokenRef as keyof TypographyProfile];
   if (!token) return {};
   return {
     fontFamily: token.fontFamily,
-    fontWeight: token.fontWeight,
-    fontSize: token.fontSize,
-    lineHeight: token.lineHeight,
+    fontWeight: overrides?.fontWeight ?? token.fontWeight,
+    fontSize: overrides?.fontSize ?? token.fontSize,
+    lineHeight: overrides?.lineHeight ?? token.lineHeight,
     letterSpacing: token.letterSpacing !== 0 ? `${token.letterSpacing}em` : undefined,
-    textAlign: token.textAlign,
+    textAlign: overrides?.textAlign ?? token.textAlign,
     direction: token.direction,
   };
 }
@@ -122,7 +137,7 @@ export function BlockRenderer({ block, tokens }: BlockRendererProps) {
           className={styles.titleBlock}
           style={{
             ...baseStyle,
-            ...typoStyle(block.typographyTokenRef, tokens.typography),
+            ...typoStyle(block.typographyTokenRef, tokens.typography, block.styleOverrides),
             color: block.styleOverrides?.color ?? tokens.accentPrimary,
           }}
           dangerouslySetInnerHTML={{ __html: richTextToHtml(block.content) }}
@@ -136,7 +151,7 @@ export function BlockRenderer({ block, tokens }: BlockRendererProps) {
           className={styles.titleBlock}
           style={{
             ...baseStyle,
-            ...typoStyle(block.typographyTokenRef, tokens.typography),
+            ...typoStyle(block.typographyTokenRef, tokens.typography, block.styleOverrides),
             color: block.styleOverrides?.color ?? tokens.textSecondary,
           }}
           dangerouslySetInnerHTML={{ __html: richTextToHtml(block.content) }}
@@ -145,16 +160,17 @@ export function BlockRenderer({ block, tokens }: BlockRendererProps) {
     }
 
     case 'body_paragraph': {
+      const overrideAlign = block.styleOverrides?.textAlign;
       return (
         <div
           className={styles.bodyBlock}
           style={{
             ...baseStyle,
-            ...typoStyle(block.typographyTokenRef, tokens.typography),
+            ...typoStyle(block.typographyTokenRef, tokens.typography, block.styleOverrides),
             color: block.styleOverrides?.color ?? tokens.textPrimary,
-            // THE CRITICAL ARABIC KASHIDA PROPERTY
-            textJustify: block.kashidaEnabled ? ('kashida' as React.CSSProperties['textJustify']) : 'auto',
-            textAlign: block.kashidaEnabled ? 'justify' : undefined,
+            // THE CRITICAL ARABIC KASHIDA PROPERTY (only when not overriding alignment)
+            textJustify: (!overrideAlign && block.kashidaEnabled) ? ('kashida' as React.CSSProperties['textJustify']) : 'auto',
+            textAlign: overrideAlign ?? (block.kashidaEnabled ? 'justify' : undefined),
           }}
           dangerouslySetInnerHTML={{ __html: richTextToHtml(block.content) }}
         />

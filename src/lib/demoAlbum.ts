@@ -32,7 +32,7 @@ function makeSlide(
       {
         id: uid(),
         type: 'main_title',
-        position: { x: 0.05, y: 0.56, width: 0.90, height: 0.12 },
+        position: { x: 0.0833, y: 0.607, width: 0.8333, height: 0.09 },
         zIndex: 10,
         visible: true,
         typographyTokenRef: 'heading-l',
@@ -41,7 +41,7 @@ function makeSlide(
       {
         id: uid(),
         type: 'body_paragraph',
-        position: { x: 0.05, y: 0.69, width: 0.90, height: 0.21 },
+        position: { x: 0.0833, y: 0.707, width: 0.8333, height: 0.167 },
         zIndex: 10,
         visible: true,
         typographyTokenRef: 'body-m',

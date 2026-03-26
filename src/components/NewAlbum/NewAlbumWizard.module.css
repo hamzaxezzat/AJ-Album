@@ -2,7 +2,7 @@
   min-height: 100vh;
   background: #0D1117;
   color: #e6edf3;
-  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  font-family: var(--brand-font-family);
   display: flex;
   flex-direction: column;
 }
@@ -29,7 +29,7 @@
 .backLink:hover { color: #e6edf3; }
 
 .topTitle {
-  font-family: 'Cairo', sans-serif;
+  font-family: var(--brand-font-family);
   font-weight: 600;
   font-size: 15px;
 }
@@ -37,7 +37,7 @@
 .channelBadge {
   background: #D32F2F;
   color: #fff;
-  font-family: 'Cairo', sans-serif;
+  font-family: var(--brand-font-family);
   font-weight: 700;
   font-size: 11px;
   padding: 3px 10px;
@@ -70,7 +70,7 @@
 }
 
 .pasteTitle {
-  font-family: 'Cairo', sans-serif;
+  font-family: var(--brand-font-family);
   font-weight: 700;
   font-size: 24px;
   color: #e6edf3;
@@ -87,7 +87,7 @@
   border: 1px solid #30363d;
   border-radius: 8px;
   color: #e6edf3;
-  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  font-family: var(--brand-font-family);
   font-size: 16px;
   line-height: 1.8;
   padding: 16px;
@@ -116,7 +116,7 @@
 }
 
 .previewTitle {
-  font-family: 'Cairo', sans-serif;
+  font-family: var(--brand-font-family);
   font-weight: 700;
   font-size: 22px;
   color: #e6edf3;
@@ -132,7 +132,7 @@
   background: none;
   border: 1px solid #30363d;
   color: #7d8590;
-  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  font-family: var(--brand-font-family);
   font-size: 13px;
   padding: 6px 14px;
   border-radius: 6px;
@@ -191,7 +191,7 @@
 }
 
 .slideCardTitle {
-  font-family: 'Cairo', sans-serif;
+  font-family: var(--brand-font-family);
   font-weight: 600;
   font-size: 14px;
   color: #e6edf3;
@@ -223,7 +223,7 @@
 .primaryBtn {
   background: #D32F2F;
   color: #fff;
-  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  font-family: var(--brand-font-family);
   font-weight: 600;
   font-size: 15px;
   padding: 13px 28px;

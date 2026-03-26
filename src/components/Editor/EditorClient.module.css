@@ -4,7 +4,7 @@
   flex-direction: column;
   background: #0D1117;
   color: #e6edf3;
-  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  font-family: var(--brand-font-family);
   overflow: hidden;
 }
 
@@ -52,7 +52,7 @@
 }
 
 .albumTitle {
-  font-family: 'Cairo', sans-serif;
+  font-family: var(--brand-font-family);
   font-weight: 600;
   font-size: 14px;
   color: #e6edf3;
@@ -65,7 +65,7 @@
 .channelBadge {
   background: #D32F2F;
   color: #fff;
-  font-family: 'Cairo', sans-serif;
+  font-family: var(--brand-font-family);
   font-weight: 700;
   font-size: 12px;
   padding: 3px 10px;
@@ -75,7 +75,7 @@
 .exportBtn {
   background: transparent;
   color: #8b949e;
-  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  font-family: var(--brand-font-family);
   font-size: 13px;
   padding: 6px 14px;
   border-radius: 5px;
@@ -207,7 +207,7 @@
   background: none;
   border: 1px dashed #30363d;
   color: #7d8590;
-  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  font-family: var(--brand-font-family);
   font-size: 12px;
   padding: 7px 0;
   border-radius: 5px;
@@ -360,7 +360,7 @@
   border: 1px solid #30363d;
   border-radius: 5px;
   color: #e6edf3;
-  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  font-family: var(--brand-font-family);
   font-size: 13px;
   line-height: 1.6;
   padding: 8px 10px;
@@ -384,7 +384,7 @@
   border: 1px solid #30363d;
   border-radius: 5px;
   color: #e6edf3;
-  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  font-family: var(--brand-font-family);
   font-size: 13px;
   padding: 7px 10px;
   width: 100%;
@@ -407,7 +407,7 @@
   background: #0D1117;
   border: 1px dashed #30363d;
   color: #7d8590;
-  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  font-family: var(--brand-font-family);
   font-size: 13px;
   padding: 14px 0;
   border-radius: 5px;
@@ -446,7 +446,7 @@
   color: #e6edf3;
   border: 1px solid #444c56;
   border-radius: 4px;
-  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  font-family: var(--brand-font-family);
   font-size: 11px;
   padding: 4px 10px;
   cursor: pointer;
@@ -469,7 +469,7 @@
   border: 1px solid #30363d;
   border-radius: 4px;
   color: #8b949e;
-  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  font-family: var(--brand-font-family);
   font-size: 11px;
   padding: 5px 9px;
   cursor: pointer;

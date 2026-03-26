@@ -199,9 +199,21 @@ src/components/Dashboard/
 src/components/NewAlbum/
   NewAlbumWizard.tsx                        2-step wizard: album setup → paste+parse script
 src/components/Editor/
-  EditorClient.tsx                          3-panel editor: slide strip + canvas + properties
-  RichTextEditor.tsx                        TipTap rich text editor (Bold/Italic/Strike/Highlight/Color)
+  EditorClient.tsx                          Thin layout shell (3-panel composition)
+  RichTextEditor.tsx                        TipTap editor (Bold/Italic/Strike/Highlight/Color/Lists)
   RichTextEditor.module.css
+  hooks/useCanvasScale.ts                   ResizeObserver responsive canvas hook
+  lib/slideFactory.ts                       makeBlankSlide() + plainToRichText()
+  lib/compressImage.ts                      Image compression utility
+  lib/textReformat.ts                       Content transforms: toBullets/toNumbered/toPlain/splitBySentences
+  panels/PropertiesPanel.tsx                Right panel router → 4 block sections
+  panels/SlideStrip.tsx                     Left slide navigator + thumbnails
+  panels/SlideThumbnail.tsx                 Zoom-based slide thumbnail
+  panels/ImageSection.tsx                   Block 4: Image upload + preview
+  panels/TextSection.tsx                    Block 3: Title + body editors + font size + reformat
+  panels/BannerSection.tsx                  Block 2: Position picker + height slider
+  panels/LayoutSection.tsx                  Block 1: Logo variant toggle + source
+  panels/styles.ts                          Shared inline style constants
 src/lib/demoAlbum.ts                        createDemoAlbum() — 5-slide علي عبد اللهي album (seeder)
 src/app/page.tsx                            → DashboardClient
 src/app/album/new/page.tsx                  → NewAlbumWizard
@@ -243,12 +255,16 @@ is not applied to the root div.
 - Storage: localStorage (`aj-album-{id}` keys). No database yet.
 - `getSavedAlbums()` in documentStore scans all `aj-album-*` localStorage keys
 - Script parser splits on bare digit lines; `suggestArchetype()` uses word count + number pattern heuristics
-- Canvas displayed at `scale(0.5)` in editor (540px display for 1080px canvas, 675px display height)
+- Canvas displayed via `useCanvasScale` hook (ResizeObserver) — responsive to window size, never hardcoded scale
 - Export button in editor POSTs to export-service at localhost:3001 — must be running separately
 - **Data migration**: `documentStore.loadFromLocalStorage` runs `migrateAlbum()` on every load, fixing old landscape albums (1350×1080 → 1080×1350), missing `typographyTokenRef`, and landscape-era block positions (y>0.5 → correct portrait positions)
 - **Image upload**: compressImage() resizes to max 1080×1350 at JPEG 82% quality before localStorage (~150-400KB per image). Images stored in IndexedDB (`aj-album-images` DB), localStorage holds `idb://{assetId}` refs. In-memory state always has resolved data URLs.
 - **Image rect**: uploaded images use `rect: { x:0, y:0, width:1, height:0.54 }` — top 54% only, matching reference design
 - **Test page**: `/test-render` renders a hardcoded Arabic demo slide — visit to isolate renderer bugs from localStorage data bugs
 - **Demo album**: Dashboard has "تحميل النموذج التجريبي" button → calls `createDemoAlbum()` → sets Zustand store → navigates to editor
-- **RichTextEditor**: TipTap editor with Bold, Italic, Strike, Yellow Highlight, and color presets (red/white/black/grey). Used in Properties Panel for title and body blocks. `onChange` receives full `RichTextContent` (ProseMirror JSON).
-- **Slide reference layout**: image top 54%, white background below, RED title at y=0.56 (accentPrimary), body at y=0.69, no banner, AJ logo top-left overlay (zIndex 50), footer: social handles + pagination dots
+- **RichTextEditor**: TipTap editor with Bold, Italic, Strike, Yellow Highlight, color presets (red/white/black/grey), Bullet List, and Ordered List. Sync uses JSON comparison (not text-only) so structural changes like reformat apply correctly. `resetKey` prop forces re-sync.
+- **Slide reference layout**: image top 54%, white background below, RED title at y=0.607 (accentPrimary), body at y=0.707, no banner, AJ logo top-left overlay (zIndex 50), footer: social handles + pagination dots
+- **Editor architecture (SOLID)**: EditorClient is a thin shell. 4 block sections in `panels/`: ImageSection, TextSection, BannerSection, LayoutSection. Utilities in `lib/`: slideFactory, compressImage, textReformat. Hook in `hooks/useCanvasScale`.
+- **Text system**: Font size presets per block (S/M/L/XL → stored in `block.styleOverrides.fontSize`). Reformat buttons: → نقاط (bullets), → أرقام (numbered), نص عادي (plain), تقسيم جمل (split sentences). All transforms in `lib/textReformat.ts`.
+- **Font sizes**: Default body-m=28px, heading-l=40px (canvas coords). Al-Jazeera font loaded dynamically from `aj-main.json` `fontFiles` array.
+- **Banner height**: Adjustable via range slider (0.05–0.25 normalized) in BannerSection. Stored in `slide.banner.heightNormalized`.

@@ -42,6 +42,7 @@ export function resolveTokens(ctx: TokenResolutionContext): ResolvedTokens {
     bulletDividers,
     canvasWidth: ctx.canvasConfig.width,
     canvasHeight: ctx.canvasConfig.height,
+    primaryFontFamily: channelProfile.primaryFontFamily,
   };
 }
 
@@ -56,6 +57,7 @@ export function tokensToCssVars(tokens: ResolvedTokens): Record<string, string> 
     '--text-secondary': tokens.textSecondary,
     '--canvas-width': `${tokens.canvasWidth}px`,
     '--canvas-height': `${tokens.canvasHeight}px`,
+    '--brand-font-family': tokens.primaryFontFamily,
     // Typography tokens
     '--font-size-heading-xl': `${tokens.typography['heading-xl'].fontSize}px`,
     '--font-size-heading-l': `${tokens.typography['heading-l'].fontSize}px`,

@@ -1,39 +1,10 @@
-@font-face {
-  font-family: 'IBM Plex Arabic';
-  src: url('/fonts/IBMPlexArabic-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'IBM Plex Arabic';
-  src: url('/fonts/IBMPlexArabic-SemiBold.woff2') format('woff2');
-  font-weight: 600;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'IBM Plex Arabic';
-  src: url('/fonts/IBMPlexArabic-Bold.woff2') format('woff2');
-  font-weight: 700;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Cairo';
-  src: url('/fonts/Cairo-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Cairo';
-  src: url('/fonts/Cairo-SemiBold.woff2') format('woff2');
-  font-weight: 600;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Cairo';
-  src: url('/fonts/Cairo-Bold.woff2') format('woff2');
-  font-weight: 700;
-  font-display: swap;
-}
+/*
+ * globals.css
+ *
+ * @font-face declarations and --brand-font-family are injected dynamically
+ * by layout.tsx from config/brands/aj-main.json (fontFiles + primaryFontFamily).
+ * To change the platform font, edit that JSON file — nothing else needs touching.
+ */
 
 * {
   box-sizing: border-box;
@@ -51,7 +22,7 @@ body {
 body {
   background: #0D1117;
   color: #e6edf3;
-  font-family: 'IBM Plex Arabic', Cairo, system-ui, sans-serif;
+  font-family: var(--brand-font-family, 'IBM Plex Arabic', Cairo, system-ui, sans-serif);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

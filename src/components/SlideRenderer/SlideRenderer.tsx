@@ -9,6 +9,16 @@
 // the same CSS (CSS Modules + CSS custom properties) and the same Chromium engine.
 
 import React from 'react';
+
+/** Returns true if the hex color is perceived as light (luminance > 0.5). */
+function isLightColor(hex: string): boolean {
+  const c = (hex ?? '#FFFFFF').replace('#', '');
+  if (c.length < 6) return true;
+  const r = parseInt(c.substring(0, 2), 16);
+  const g = parseInt(c.substring(2, 4), 16);
+  const b = parseInt(c.substring(4, 6), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.5;
+}
 import type { Slide, Album, ChannelProfile } from '@/types/album';
 import { resolveTokens, tokensToCssVars } from '@/lib/tokens/resolveTokens';
 import { BlockRenderer } from './BlockRenderer';
@@ -54,7 +64,7 @@ export function SlideRenderer({
     width: tokens.canvasWidth,
     height: tokens.canvasHeight,
     backgroundColor: tokens.background,
-    fontFamily: "'IBM Plex Arabic', Cairo, sans-serif",
+    fontFamily: channelProfile.primaryFontFamily,
     direction: 'rtl' as const,
     WebkitFontSmoothing: 'antialiased',
     ...(scale !== 1
@@ -78,23 +88,42 @@ export function SlideRenderer({
       {/* Layer 1: Background image zone (zIndex 1) */}
       {slide.image && <ImageZone config={slide.image} />}
 
-      {/* Channel logo — top-left corner, over the image zone (zIndex 50) */}
-      {channelProfile.logo.compact.url && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={channelProfile.logo.compact.url}
-          alt={channelProfile.name}
-          style={{
-            position: 'absolute',
-            top: `calc(var(--canvas-height) * 0.03)`,
-            left: `calc(var(--canvas-width) * 0.04)`,
-            width: `calc(var(--canvas-width) * 0.13)`,
-            height: 'auto',
-            zIndex: 50,
-            pointerEvents: 'none',
-          }}
-        />
-      )}
+      {/* Channel logo — 90px from top-left in canvas pixel space, variant per-slide */}
+      {(channelProfile.logo.primary?.url || channelProfile.logo.compact?.url) && (() => {
+        // Resolve logo variant: explicit per-slide override → auto luminance detection
+        const variant = slide.logoVariant ?? 'auto';
+        const useDark =
+          variant === 'dark' ? true :
+          variant === 'white' ? false :
+          isLightColor(tokens.background ?? '#FFFFFF'); // auto
+
+        const logoUrl = useDark
+          ? (channelProfile.logo.primary?.url ?? channelProfile.logo.compact?.url)
+          : (channelProfile.logo.reversed?.url ?? channelProfile.logo.compact?.url);
+
+        // Use concrete pixel values from tokens — same canvas coordinate system,
+        // no CSS-var/zoom interaction issues.
+        const LOGO_MARGIN_TOP  = Math.round(tokens.canvasHeight * (90 / 1350));  // 90px
+        const LOGO_MARGIN_LEFT = Math.round(tokens.canvasWidth  * (90 / 1080));  // 90px
+        const LOGO_WIDTH       = Math.round(tokens.canvasWidth  * 0.09);         // ~97px
+
+        return (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={logoUrl}
+            alt={channelProfile.name}
+            style={{
+              position: 'absolute',
+              top: LOGO_MARGIN_TOP,
+              left: LOGO_MARGIN_LEFT,
+              width: LOGO_WIDTH,
+              height: 'auto',
+              zIndex: 50,
+              pointerEvents: 'none',
+            }}
+          />
+        );
+      })()}
 
       {/* Layer 2: Content blocks (each carries its own zIndex) */}
       {sortedBlocks.map(

@@ -71,7 +71,7 @@
   line-height: 1.7;
   color: #c9d1d9;
   direction: rtl;
-  font-family: 'IBM Plex Sans Arabic', 'Cairo', sans-serif;
+  font-family: var(--brand-font-family);
 }
 
 .editorArea:empty::before {
@@ -88,7 +88,7 @@
   line-height: 1.7;
   color: #c9d1d9;
   direction: rtl;
-  font-family: 'IBM Plex Sans Arabic', 'Cairo', sans-serif;
+  font-family: var(--brand-font-family);
   min-height: 60px;
 }
 

@@ -22,12 +22,12 @@ function migrateAlbum(album: Album): Album {
         const b = block as MainTitleBlock;
         if (!b.typographyTokenRef) b.typographyTokenRef = 'heading-l';
         // Always migrate to new text-zone positions (below the image)
-        b.position = { x: 0.05, y: 0.56, width: 0.90, height: 0.12 };
+        b.position = { x: 0.0833, y: 0.607, width: 0.8333, height: 0.09 };
       } else if (block.type === 'body_paragraph') {
         const b = block as BodyParagraphBlock;
         if (!b.typographyTokenRef) b.typographyTokenRef = 'body-m';
         if (b.kashidaEnabled === undefined) b.kashidaEnabled = true;
-        b.position = { x: 0.05, y: 0.69, width: 0.90, height: 0.21 };
+        b.position = { x: 0.0833, y: 0.707, width: 0.8333, height: 0.167 };
       }
     }
 

@@ -22,6 +22,14 @@ export interface AssetRef {
   altText?: string;
 }
 
+/** One @font-face entry defined in the channel profile. */
+export interface FontFileEntry {
+  family: string;    // CSS font-family name, e.g. 'Al-Jazeera'
+  weight: number;    // 300 | 400 | 700 | 900
+  url: string;       // Absolute path from /public, e.g. '/fonts/AlJazeera-Bold.ttf'
+  format: string;    // 'truetype' | 'woff2' | 'woff'
+}
+
 export interface ColorOption {
   hex: string;
   label: string;
@@ -137,6 +145,10 @@ export interface ChannelProfile {
   footer: FooterDefinition;
   sourceStyle: SourceStyle;
   typography: TypographyProfile;
+  /** @font-face entries — layout.tsx reads these to inject CSS dynamically. */
+  fontFiles: FontFileEntry[];
+  /** Full CSS font-family stack, e.g. "'Al-Jazeera', 'IBM Plex Arabic', sans-serif". */
+  primaryFontFamily: string;
   availableArchetypes: string[];
   defaultDensity: Density;
   brandLocks: BrandLockConfig;
@@ -227,6 +239,13 @@ export interface Slide {
   themeOverrides?: Partial<AlbumTheme>;
   notes?: string;
   rawScript?: string;
+  /**
+   * Which logo variant to show on this slide.
+   * 'dark'  → dark-colored logo (aj-logo-dark.png) — for light/white backgrounds
+   * 'white' → white logo (aj-logo-white.png)       — for dark photos/backgrounds
+   * 'auto'  → auto-detect from slide background color (default)
+   */
+  logoVariant?: 'auto' | 'dark' | 'white';
   metadata: SlideMetadata;
 }
 
@@ -235,7 +254,9 @@ export interface Slide {
 export interface BlockStyleOverride {
   typographyTokenRef?: string;
   fontWeight?: number;
+  fontSize?: number;           // canvas px — overrides token value
   lineHeight?: number;
+  textAlign?: 'right' | 'left' | 'center';
   color?: string;
   backgroundColor?: string;
   backgroundOpacity?: number;
@@ -551,4 +572,6 @@ export interface ResolvedTokens {
   // Canvas
   canvasWidth: number;
   canvasHeight: number;
+  /** Resolved from channelProfile.primaryFontFamily — used as --brand-font-family CSS var. */
+  primaryFontFamily: string;
 }
