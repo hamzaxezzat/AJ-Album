@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { getSavedAlbums, useDocumentStore } from '@/store/documentStore';
 import { createDemoAlbum } from '@/lib/demoAlbum';
 import { deleteAlbumImages } from '@/lib/imageStore';
-import { CustomizationPanel } from './CustomizationPanel';
 import styles from './Dashboard.module.css';
 
 type AlbumSummary = {
@@ -172,9 +171,23 @@ export function DashboardClient() {
           </div>
         )}
 
-        {/* Platform customization */}
+        {/* Platform settings link */}
         <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid #21262d' }}>
-          <CustomizationPanel />
+          <Link
+            href="/settings"
+            style={{
+              background: '#21262d', border: '1px solid #30363d', borderRadius: 8,
+              color: '#8b949e', padding: '10px 20px', fontSize: 14, cursor: 'pointer',
+              fontFamily: 'var(--brand-font-family)', transition: 'all 0.15s',
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              textDecoration: 'none',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#30363d'; e.currentTarget.style.color = '#e6edf3'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#21262d'; e.currentTarget.style.color = '#8b949e'; }}
+          >
+            <span style={{ fontSize: 18 }}>&#9881;</span>
+            إعدادات المنصة
+          </Link>
         </div>
       </main>
     </div>
