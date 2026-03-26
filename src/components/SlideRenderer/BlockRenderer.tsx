@@ -58,6 +58,9 @@ function nodeToHtml(node: DocNode): string {
             case 'italic':
               html = `<em>${html}</em>`;
               break;
+            case 'underline':
+              html = `<u>${html}</u>`;
+              break;
             case 'highlight':
               html = `<mark style="background-color:${mark.attrs?.color ?? 'inherit'};color:inherit;padding:0 0.1em">${html}</mark>`;
               break;

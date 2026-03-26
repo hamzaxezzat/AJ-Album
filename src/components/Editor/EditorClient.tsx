@@ -8,6 +8,7 @@ import type {
   BodyParagraphBlock,
   RichTextContent,
   BlockStyleOverride,
+  NormalizedRect,
 } from '@/types/album';
 import { SlideRenderer } from '@/components/SlideRenderer';
 import { useDocumentStore } from '@/store/documentStore';
@@ -16,6 +17,7 @@ import { useCanvasScale } from './hooks/useCanvasScale';
 import { makeBlankSlide } from './lib/slideFactory';
 import { SlideStrip } from './panels/SlideStrip';
 import { PropertiesPanel } from './panels/PropertiesPanel';
+import { CanvasInteractionLayer } from './canvas/CanvasInteractionLayer';
 import ajMainRaw from '../../../config/brands/aj-main.json';
 
 type LogoVariant = 'auto' | 'dark' | 'white';
@@ -123,6 +125,34 @@ export function EditorClient({ albumId }: { albumId: string }) {
         objectFit: 'cover',
         focalPoint: { x: 0.5, y: 0.5 },
       };
+    });
+  }, [selectedSlide, updateSlide]);
+
+  // ── Canvas interaction callbacks ──
+
+  const handleUpdateBlockContent = useCallback((blockId: string, content: RichTextContent) => {
+    if (!selectedSlide) return;
+    updateSlide(selectedSlide.id, (slide) => {
+      const b = slide.blocks.find(b => b.id === blockId);
+      if (b && 'content' in b) {
+        (b as MainTitleBlock | BodyParagraphBlock).content = content;
+      }
+    });
+  }, [selectedSlide, updateSlide]);
+
+  const handleUpdateBlockPosition = useCallback((blockId: string, position: Partial<NormalizedRect>) => {
+    if (!selectedSlide) return;
+    updateSlide(selectedSlide.id, (slide) => {
+      const b = slide.blocks.find(b => b.id === blockId);
+      if (b) Object.assign(b.position, position);
+    });
+  }, [selectedSlide, updateSlide]);
+
+  const handleUpdateBlockStyleById = useCallback((blockId: string, overrides: Partial<BlockStyleOverride>) => {
+    if (!selectedSlide) return;
+    updateSlide(selectedSlide.id, (slide) => {
+      const b = slide.blocks.find(b => b.id === blockId);
+      if (b) b.styleOverrides = { ...b.styleOverrides, ...overrides };
     });
   }, [selectedSlide, updateSlide]);
 
@@ -254,9 +284,20 @@ export function EditorClient({ albumId }: { albumId: string }) {
                 borderRadius: 4,
                 boxShadow: '0 0 0 1px #30363d, 0 4px 24px rgba(0,0,0,0.5)',
                 overflow: 'hidden', flexShrink: 0,
+                position: 'relative',
               }}>
-                <div style={{ zoom: canvasScale } as React.CSSProperties}>
+                <div style={{ zoom: canvasScale, position: 'relative' } as React.CSSProperties}>
                   <SlideRenderer slide={selectedSlide} album={album} channelProfile={channelProfile} />
+                  <CanvasInteractionLayer
+                    slide={selectedSlide}
+                    canvasW={canvasW}
+                    canvasH={canvasH}
+                    canvasScale={canvasScale}
+                    typography={channelProfile.typography}
+                    onUpdateBlockContent={handleUpdateBlockContent}
+                    onUpdateBlockPosition={handleUpdateBlockPosition}
+                    onUpdateBlockStyle={handleUpdateBlockStyleById}
+                  />
                 </div>
               </div>
               <span style={{ fontSize: 11, color: '#444c56', fontFamily: 'system-ui' }}>

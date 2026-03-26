@@ -214,6 +214,10 @@ src/components/Editor/
   panels/BannerSection.tsx                  Block 2: Position picker + height slider
   panels/LayoutSection.tsx                  Block 1: Logo variant toggle + source
   panels/styles.ts                          Shared inline style constants
+  canvas/CanvasInteractionLayer.tsx          Click/double-click/drag on canvas blocks
+  canvas/InlineTextEditor.tsx               TipTap editor positioned at block on canvas
+  canvas/FloatingToolbar.tsx                Formatting toolbar (Canva-style)
+  canvas/useDragBlock.ts                    Drag-to-reposition hook
 src/lib/demoAlbum.ts                        createDemoAlbum() — 5-slide علي عبد اللهي album (seeder)
 src/app/page.tsx                            → DashboardClient
 src/app/album/new/page.tsx                  → NewAlbumWizard
@@ -268,3 +272,5 @@ is not applied to the root div.
 - **Text system**: Font size presets per block (S/M/L/XL → stored in `block.styleOverrides.fontSize`). Reformat buttons: → نقاط (bullets), → أرقام (numbered), نص عادي (plain), تقسيم جمل (split sentences). All transforms in `lib/textReformat.ts`.
 - **Font sizes**: Default body-m=28px, heading-l=40px (canvas coords). Al-Jazeera font loaded dynamically from `aj-main.json` `fontFiles` array.
 - **Banner height**: Adjustable via range slider (0.05–0.25 normalized) in BannerSection. Stored in `slide.banner.heightNormalized`.
+- **Canvas inline editing (Canva-style)**: Click block on canvas → select (blue outline). Double-click → inline TipTap editor at block position. Floating toolbar appears with: Bold/Italic/Underline/Strike, font size +/-, text color presets, highlight colors, alignment (R/C/L), bullet/numbered lists. Drag selected blocks to reposition. Components in `canvas/`: CanvasInteractionLayer, InlineTextEditor, FloatingToolbar, useDragBlock.
+- **editorUIStore**: `selectedBlockId`, `isEditingBlock`, `startEditingBlock()`, `stopEditingBlock()` — manages canvas interaction state.
