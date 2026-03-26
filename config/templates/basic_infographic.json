@@ -1,0 +1,70 @@
+{
+  "id": "basic_infographic",
+  "name": "بطاقة بيانات",
+  "archetype": "data_card",
+  "coverCompatible": false,
+  "requiresImage": false,
+  "channelCompatibility": ["aj-main", "aj-mubasher", "aj-lebanon"],
+  "zones": [
+    {
+      "id": "banner-zone",
+      "rect": { "x": 0, "y": 0, "width": 1, "height": 0.10 },
+      "role": "banner",
+      "stackingOrder": "content"
+    },
+    {
+      "id": "stat-zone",
+      "rect": { "x": 0.04, "y": 0.12, "width": 0.92, "height": 0.35 },
+      "role": "stat",
+      "stackingOrder": "content"
+    },
+    {
+      "id": "text-content-zone",
+      "rect": { "x": 0.04, "y": 0.50, "width": 0.92, "height": 0.38 },
+      "role": "text_content",
+      "stackingOrder": "content"
+    },
+    {
+      "id": "footer-chrome",
+      "rect": { "x": 0, "y": 0.926, "width": 1, "height": 0.074 },
+      "role": "footer_chrome",
+      "stackingOrder": "chrome"
+    }
+  ],
+  "defaultBlocks": [
+    {
+      "type": "main_title",
+      "position": { "x": 0.0833, "y": 0.12, "width": 0.8333, "height": 0.07 },
+      "zIndex": 10,
+      "visible": true,
+      "typographyTokenRef": "heading-l"
+    },
+    {
+      "type": "stat_value",
+      "position": { "x": 0.0833, "y": 0.20, "width": 0.8333, "height": 0.20 },
+      "zIndex": 10,
+      "visible": true,
+      "valueTypographyTokenRef": "stat-display",
+      "labelTypographyTokenRef": "body-m",
+      "value": "",
+      "label": "",
+      "accentColor": "#D32F2F"
+    },
+    {
+      "type": "body_paragraph",
+      "position": { "x": 0.0833, "y": 0.42, "width": 0.8333, "height": 0.18 },
+      "zIndex": 10,
+      "visible": true,
+      "typographyTokenRef": "body-m",
+      "kashidaEnabled": true
+    },
+    {
+      "type": "source_line",
+      "position": { "x": 0.0833, "y": 0.62, "width": 0.8333, "height": 0.04 },
+      "zIndex": 10,
+      "visible": true,
+      "typographyTokenRef": "body-s",
+      "text": ""
+    }
+  ]
+}

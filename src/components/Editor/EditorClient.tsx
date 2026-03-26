@@ -3,18 +3,16 @@ import { useEffect, useCallback, useState, useRef } from 'react';
 import Link from 'next/link';
 import type {
   ChannelProfile,
-  BannerPosition,
-  MainTitleBlock,
-  BodyParagraphBlock,
-  RichTextContent,
   BlockStyleOverride,
-  NormalizedRect,
 } from '@/types/album';
 import { SlideRenderer } from '@/components/SlideRenderer';
 import { useDocumentStore } from '@/store/documentStore';
 import { useEditorUIStore } from '@/store/editorUIStore';
+import { useHistoryStore } from '@/store/historyStore';
 import { useCanvasScale } from './hooks/useCanvasScale';
-import { makeBlankSlide } from './lib/slideFactory';
+import { useBlockUpdates } from './hooks/useBlockUpdates';
+import { useSlideManagement } from './hooks/useSlideManagement';
+import { useExport } from './hooks/useExport';
 import { SlideStrip } from './panels/SlideStrip';
 import { PropertiesPanel } from './panels/PropertiesPanel';
 import { CanvasInteractionLayer } from './canvas/CanvasInteractionLayer';
@@ -23,7 +21,6 @@ import type { Editor } from '@tiptap/react';
 import type { TypographyProfile } from '@/types/album';
 import ajMainRaw from '../../../config/brands/aj-main.json';
 
-type LogoVariant = 'auto' | 'dark' | 'white';
 const channelProfile = ajMainRaw as unknown as ChannelProfile;
 
 // ─── Editor Client ────────────────────────────────────────────
@@ -31,16 +28,20 @@ const channelProfile = ajMainRaw as unknown as ChannelProfile;
 export function EditorClient({ albumId }: { albumId: string }) {
   // ── Store ──
   const album = useDocumentStore((s) => s.album);
+  const setAlbum = useDocumentStore((s) => s.setAlbum);
   const loadFromLocalStorage = useDocumentStore((s) => s.loadFromLocalStorage);
-  const updateSlide = useDocumentStore((s) => s.updateSlide);
   const updateAlbumTheme = useDocumentStore((s) => s.updateAlbumTheme);
-  const addSlide = useDocumentStore((s) => s.addSlide);
-  const deleteSlide = useDocumentStore((s) => s.deleteSlide);
-  const duplicateSlide = useDocumentStore((s) => s.duplicateSlide);
   const selectedSlideId = useEditorUIStore((s) => s.selectedSlideId);
   const setSelectedSlide = useEditorUIStore((s) => s.setSelectedSlide);
   const [loadAttempted, setLoadAttempted] = useState(false);
   const [activeEditor, setActiveEditor] = useState<Editor | null>(null);
+
+  // ── History ──
+  const undo = useHistoryStore((s) => s.undo);
+  const redo = useHistoryStore((s) => s.redo);
+  const canUndo = useHistoryStore((s) => s.canUndo);
+  const canRedo = useHistoryStore((s) => s.canRedo);
+  const clearHistory = useHistoryStore((s) => s.clear);
 
   // ── Responsive canvas ──
   const canvasAreaRef = useRef<HTMLDivElement>(null);
@@ -51,6 +52,7 @@ export function EditorClient({ albumId }: { albumId: string }) {
   // ── Load album ──
   useEffect(() => {
     if (album?.id === albumId) { setLoadAttempted(true); return; }
+    clearHistory();
     loadFromLocalStorage(albumId).then(() => setLoadAttempted(true));
   }, [albumId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -62,154 +64,39 @@ export function EditorClient({ albumId }: { albumId: string }) {
 
   const selectedSlide = album?.slides.find((s) => s.id === selectedSlideId) ?? null;
 
-  // ── Callbacks ──
+  // ── SOLID hooks ──
+  const blockUpdates = useBlockUpdates(selectedSlide);
+  const slideManagement = useSlideManagement();
+  const exportActions = useExport({ album, selectedSlide, channelProfile });
 
-  const handleUpdateTitle = useCallback((content: RichTextContent) => {
-    if (!selectedSlide) return;
-    updateSlide(selectedSlide.id, (slide) => {
-      const b = slide.blocks.find(b => b.type === 'main_title');
-      if (b) (b as MainTitleBlock).content = content;
-    });
-  }, [selectedSlide, updateSlide]);
-
-  const handleUpdateBody = useCallback((content: RichTextContent) => {
-    if (!selectedSlide) return;
-    updateSlide(selectedSlide.id, (slide) => {
-      const b = slide.blocks.find(b => b.type === 'body_paragraph');
-      if (b) (b as BodyParagraphBlock).content = content;
-    });
-  }, [selectedSlide, updateSlide]);
-
-  const handleUpdateBlockStyle = useCallback((
-    blockType: 'main_title' | 'body_paragraph',
-    overrides: Partial<BlockStyleOverride>,
-  ) => {
-    if (!selectedSlide) return;
-    updateSlide(selectedSlide.id, (slide) => {
-      const b = slide.blocks.find(b => b.type === blockType);
-      if (b) b.styleOverrides = { ...b.styleOverrides, ...overrides };
-    });
-  }, [selectedSlide, updateSlide]);
-
-  const handleUpdateBanner = useCallback((pos: BannerPosition) => {
-    if (!selectedSlide) return;
-    updateSlide(selectedSlide.id, (slide) => {
-      if (slide.banner) slide.banner.position = pos;
-    });
-  }, [selectedSlide, updateSlide]);
-
-  const handleUpdateBannerHeight = useCallback((height: number) => {
-    if (!selectedSlide) return;
-    updateSlide(selectedSlide.id, (slide) => {
-      if (slide.banner) slide.banner.heightNormalized = height;
-    });
-  }, [selectedSlide, updateSlide]);
-
-  const handleUpdateSource = useCallback((text: string) => {
-    if (!selectedSlide) return;
-    updateSlide(selectedSlide.id, (slide) => {
-      if (!slide.source) {
-        slide.source = { text, visible: true, sizeMode: 'auto', paginationBehavior: 'share-space' };
-      } else {
-        slide.source.text = text;
-      }
-    });
-  }, [selectedSlide, updateSlide]);
-
-  const handleUpdateLogoVariant = useCallback((variant: LogoVariant) => {
-    if (!selectedSlide) return;
-    updateSlide(selectedSlide.id, (slide) => { slide.logoVariant = variant; });
-  }, [selectedSlide, updateSlide]);
-
-  const handleUpdateSlideOverrides = useCallback((updater: (o: Partial<import('@/types/album').AlbumTheme>) => Partial<import('@/types/album').AlbumTheme>) => {
-    if (!selectedSlide) return;
-    updateSlide(selectedSlide.id, (slide) => {
-      slide.themeOverrides = updater(slide.themeOverrides ?? {});
-    });
-  }, [selectedSlide, updateSlide]);
-
-  const handleUploadImage = useCallback((dataUrl: string) => {
-    if (!selectedSlide) return;
-    updateSlide(selectedSlide.id, (slide) => {
-      slide.image = {
-        asset: { id: slide.id, url: dataUrl, mimeType: 'image/jpeg', width: 1080, height: 1350 },
-        rect: { x: 0, y: 0, width: 1, height: 0.54 },
-        objectFit: 'cover',
-        focalPoint: { x: 0.5, y: 0.5 },
-      };
-    });
-  }, [selectedSlide, updateSlide]);
-
-  // ── Canvas interaction callbacks ──
-
-  const handleUpdateBlockContent = useCallback((blockId: string, content: RichTextContent) => {
-    if (!selectedSlide) return;
-    updateSlide(selectedSlide.id, (slide) => {
-      const b = slide.blocks.find(b => b.id === blockId);
-      if (b && 'content' in b) {
-        (b as MainTitleBlock | BodyParagraphBlock).content = content;
-      }
-    });
-  }, [selectedSlide, updateSlide]);
-
-  const handleUpdateBlockPosition = useCallback((blockId: string, position: Partial<NormalizedRect>) => {
-    if (!selectedSlide) return;
-    updateSlide(selectedSlide.id, (slide) => {
-      const b = slide.blocks.find(b => b.id === blockId);
-      if (b) Object.assign(b.position, position);
-    });
-  }, [selectedSlide, updateSlide]);
-
-  const handleUpdateBlockStyleById = useCallback((blockId: string, overrides: Partial<BlockStyleOverride>) => {
-    if (!selectedSlide) return;
-    updateSlide(selectedSlide.id, (slide) => {
-      const b = slide.blocks.find(b => b.id === blockId);
-      if (b) b.styleOverrides = { ...b.styleOverrides, ...overrides };
-    });
-  }, [selectedSlide, updateSlide]);
-
-  const handleAddSlide = useCallback(() => {
+  // ── Undo / Redo handlers ──
+  const handleUndo = useCallback(() => {
     if (!album) return;
-    const idx = album.slides.findIndex(s => s.id === selectedSlideId);
-    const after = idx >= 0 ? idx : album.slides.length - 1;
-    const ns = makeBlankSlide(after + 2);
-    addSlide(ns, after);
-    setSelectedSlide(ns.id);
-  }, [album, selectedSlideId, addSlide, setSelectedSlide]);
+    const restored = undo(album);
+    if (restored) setAlbum(restored);
+  }, [album, undo, setAlbum]);
 
-  const handleDeleteSlide = useCallback((slideId: string) => {
-    if (!album || album.slides.length <= 1) return;
-    const idx = album.slides.findIndex(s => s.id === slideId);
-    deleteSlide(slideId);
-    const remaining = album.slides.filter(s => s.id !== slideId);
-    if (remaining.length > 0) setSelectedSlide(remaining[Math.min(idx, remaining.length - 1)].id);
-  }, [album, deleteSlide, setSelectedSlide]);
+  const handleRedo = useCallback(() => {
+    if (!album) return;
+    const restored = redo(album);
+    if (restored) setAlbum(restored);
+  }, [album, redo, setAlbum]);
 
-  const handleDuplicateSlide = useCallback((slideId: string) => {
-    const ns = duplicateSlide(slideId);
-    if (ns) setSelectedSlide(ns.id);
-  }, [duplicateSlide, setSelectedSlide]);
-
-  const handleExport = useCallback(async () => {
-    if (!selectedSlide || !album) return;
-    try {
-      const res = await fetch('http://localhost:3001/export/slide', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slide: selectedSlide, album, channelProfile }),
-      });
-      if (!res.ok) throw new Error();
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `slide-${selectedSlide.number}.png`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      alert('تأكد من تشغيل خدمة التصدير على المنفذ 3001');
-    }
-  }, [selectedSlide, album]);
+  // ── Keyboard shortcuts ──
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleRedo();
+        } else {
+          handleUndo();
+        }
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [handleUndo, handleRedo]);
 
   // ── Toolbar data (for the fixed bar) ──
   const selectedBlockForToolbar = selectedSlide?.blocks.find(
@@ -230,11 +117,8 @@ export function EditorClient({ albumId }: { albumId: string }) {
   const handleToolbarStyle = useCallback((overrides: Partial<BlockStyleOverride>) => {
     const blockId = useEditorUIStore.getState().selectedBlockId;
     if (!blockId || !selectedSlide) return;
-    updateSlide(selectedSlide.id, (slide) => {
-      const b = slide.blocks.find(b => b.id === blockId);
-      if (b) b.styleOverrides = { ...b.styleOverrides, ...overrides };
-    });
-  }, [selectedSlide, updateSlide]);
+    blockUpdates.handleUpdateBlockStyleById(blockId, overrides);
+  }, [selectedSlide, blockUpdates]);
 
   // ── Loading / not-found ──
 
@@ -272,24 +156,67 @@ export function EditorClient({ albumId }: { albumId: string }) {
         borderBottom: '1px solid #21262d', flexShrink: 0, direction: 'rtl',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Link href="/" style={{ color: '#8b949e', textDecoration: 'none', fontSize: 20, lineHeight: 1 }}>←</Link>
+          <Link href="/" style={{ color: '#8b949e', textDecoration: 'none', fontSize: 20, lineHeight: 1 }}>&#8592;</Link>
           <span style={{ fontFamily: 'var(--brand-font-family)', fontWeight: 700, fontSize: 15, color: '#e6edf3' }} dir="rtl" lang="ar">
             {album.title}
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Undo / Redo */}
+          <UndoRedoButtons
+            canUndo={canUndo()}
+            canRedo={canRedo()}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+          />
+
+          <span style={{ width: 1, height: 24, background: '#30363d' }} />
+
           <span style={{ background: '#D32F2F', color: '#fff', fontWeight: 700, fontSize: 12, padding: '3px 10px', borderRadius: 4 }}>
             الجزيرة
           </span>
-          <button type="button" onClick={handleExport} style={{
+
+          {/* Export slide */}
+          <button type="button" onClick={exportActions.handleExportSlide} disabled={exportActions.isExporting} style={{
             background: '#21262d', color: '#e6edf3', border: '1px solid #30363d',
             borderRadius: 5, padding: '6px 14px', fontSize: 13, cursor: 'pointer',
             fontFamily: 'var(--brand-font-family)',
+            opacity: exportActions.isExporting ? 0.5 : 1,
           }}>
             تصدير PNG
           </button>
+
+          {/* Export album ZIP */}
+          <button type="button" onClick={exportActions.handleExportAlbum} disabled={exportActions.isExporting} style={{
+            background: '#D32F2F', color: '#fff', border: 'none',
+            borderRadius: 5, padding: '6px 14px', fontSize: 13, cursor: 'pointer',
+            fontFamily: 'var(--brand-font-family)',
+            opacity: exportActions.isExporting ? 0.5 : 1,
+          }}>
+            {exportActions.isExporting && exportActions.exportProgress
+              ? `تصدير ${exportActions.exportProgress.current}/${exportActions.exportProgress.total}`
+              : 'تصدير ZIP'
+            }
+          </button>
         </div>
       </header>
+
+      {/* Export error banner */}
+      {exportActions.exportError && (
+        <div style={{
+          background: 'rgba(244,67,54,0.1)', borderBottom: '1px solid rgba(244,67,54,0.3)',
+          padding: '8px 16px', fontSize: 12, color: '#ef5350',
+          fontFamily: 'var(--brand-font-family)', direction: 'rtl',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <span>{exportActions.exportError}</span>
+          <button type="button" onClick={() => {}} style={{
+            background: 'none', border: 'none', color: '#ef5350', cursor: 'pointer', fontSize: 16,
+          }}>
+            &#10005;
+          </button>
+        </div>
+      )}
 
       {/* ── Formatting toolbar bar (fixed under header) ── */}
       <FloatingToolbar
@@ -308,9 +235,9 @@ export function EditorClient({ albumId }: { albumId: string }) {
           channelProfile={channelProfile}
           selectedSlideId={selectedSlideId}
           onSelectSlide={setSelectedSlide}
-          onAddSlide={handleAddSlide}
-          onDeleteSlide={handleDeleteSlide}
-          onDuplicateSlide={handleDuplicateSlide}
+          onAddSlide={slideManagement.handleAddSlide}
+          onDeleteSlide={slideManagement.handleDeleteSlide}
+          onDuplicateSlide={slideManagement.handleDuplicateSlide}
         />
 
         {/* Center: Canvas */}
@@ -339,15 +266,15 @@ export function EditorClient({ albumId }: { albumId: string }) {
                     canvasH={canvasH}
                     canvasScale={canvasScale}
                     typography={channelProfile.typography}
-                    onUpdateBlockContent={handleUpdateBlockContent}
-                    onUpdateBlockPosition={handleUpdateBlockPosition}
-                    onUpdateBlockStyle={handleUpdateBlockStyleById}
+                    onUpdateBlockContent={blockUpdates.handleUpdateBlockContent}
+                    onUpdateBlockPosition={blockUpdates.handleUpdateBlockPosition}
+                    onUpdateBlockStyle={blockUpdates.handleUpdateBlockStyleById}
                     onEditorChange={setActiveEditor}
                   />
                 </div>
               </div>
               <span style={{ fontSize: 11, color: '#444c56', fontFamily: 'system-ui' }}>
-                {canvasW} × {canvasH} · شريحة {selectedSlide.number}
+                {canvasW} &times; {canvasH} &middot; شريحة {selectedSlide.number}
               </span>
             </div>
           ) : (
@@ -365,16 +292,16 @@ export function EditorClient({ albumId }: { albumId: string }) {
               slide={selectedSlide}
               album={album}
               channelProfile={channelProfile}
-              onUpdateTitle={handleUpdateTitle}
-              onUpdateBody={handleUpdateBody}
-              onUpdateBlockStyle={handleUpdateBlockStyle}
-              onUpdateBanner={handleUpdateBanner}
-              onUpdateBannerHeight={handleUpdateBannerHeight}
-              onUpdateSource={handleUpdateSource}
-              onUploadImage={handleUploadImage}
-              onUpdateLogoVariant={handleUpdateLogoVariant}
+              onUpdateTitle={blockUpdates.handleUpdateTitle}
+              onUpdateBody={blockUpdates.handleUpdateBody}
+              onUpdateBlockStyle={blockUpdates.handleUpdateBlockStyle}
+              onUpdateBanner={blockUpdates.handleUpdateBanner}
+              onUpdateBannerHeight={blockUpdates.handleUpdateBannerHeight}
+              onUpdateSource={blockUpdates.handleUpdateSource}
+              onUploadImage={blockUpdates.handleUploadImage}
+              onUpdateLogoVariant={blockUpdates.handleUpdateLogoVariant}
               onUpdateAlbumTheme={updateAlbumTheme}
-              onUpdateSlideOverrides={handleUpdateSlideOverrides}
+              onUpdateSlideOverrides={blockUpdates.handleUpdateSlideOverrides}
             />
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -383,6 +310,38 @@ export function EditorClient({ albumId }: { albumId: string }) {
           )}
         </aside>
       </div>
+    </div>
+  );
+}
+
+// ─── Sub-components ──────────────────────────────────────────
+
+function UndoRedoButtons({
+  canUndo, canRedo, onUndo, onRedo,
+}: {
+  canUndo: boolean; canRedo: boolean;
+  onUndo: () => void; onRedo: () => void;
+}) {
+  const btnStyle = (enabled: boolean): React.CSSProperties => ({
+    background: 'transparent',
+    border: '1px solid #30363d',
+    borderRadius: 4,
+    color: enabled ? '#c9d1d9' : '#484f58',
+    cursor: enabled ? 'pointer' : 'default',
+    padding: '4px 8px',
+    fontSize: 16,
+    lineHeight: 1,
+    opacity: enabled ? 1 : 0.4,
+  });
+
+  return (
+    <div style={{ display: 'flex', gap: 2 }}>
+      <button type="button" onClick={onUndo} disabled={!canUndo} title="تراجع (Ctrl+Z)" style={btnStyle(canUndo)}>
+        &#8630;
+      </button>
+      <button type="button" onClick={onRedo} disabled={!canRedo} title="إعادة (Ctrl+Shift+Z)" style={btnStyle(canRedo)}>
+        &#8631;
+      </button>
     </div>
   );
 }

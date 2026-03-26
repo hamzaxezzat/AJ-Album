@@ -1,0 +1,53 @@
+{
+  "id": "highlighted_statement",
+  "name": "جملة بارزة",
+  "archetype": "highlighted_statement",
+  "coverCompatible": true,
+  "requiresImage": true,
+  "channelCompatibility": ["aj-main", "aj-mubasher", "aj-lebanon"],
+  "zones": [
+    {
+      "id": "image-zone",
+      "rect": { "x": 0, "y": 0, "width": 1, "height": 0.65 },
+      "role": "image",
+      "stackingOrder": "background"
+    },
+    {
+      "id": "text-content-zone",
+      "rect": { "x": 0.06, "y": 0.35, "width": 0.88, "height": 0.30 },
+      "role": "text_content",
+      "stackingOrder": "content"
+    },
+    {
+      "id": "banner-zone",
+      "rect": { "x": 0, "y": 0.60, "width": 1, "height": 0.10 },
+      "role": "banner",
+      "stackingOrder": "content"
+    },
+    {
+      "id": "footer-chrome",
+      "rect": { "x": 0, "y": 0.926, "width": 1, "height": 0.074 },
+      "role": "footer_chrome",
+      "stackingOrder": "chrome"
+    }
+  ],
+  "defaultBlocks": [
+    {
+      "type": "highlighted_phrase",
+      "position": { "x": 0.0833, "y": 0.60, "width": 0.8333, "height": 0.18 },
+      "zIndex": 15,
+      "visible": true,
+      "typographyTokenRef": "heading-l",
+      "backgroundColor": "#D32F2F",
+      "textColor": "#FFFFFF"
+    },
+    {
+      "type": "body_paragraph",
+      "position": { "x": 0.0833, "y": 0.80, "width": 0.8333, "height": 0.10 },
+      "zIndex": 10,
+      "visible": true,
+      "typographyTokenRef": "body-s",
+      "kashidaEnabled": false
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getSavedAlbums, useDocumentStore } from '@/store/documentStore';
@@ -31,15 +31,29 @@ export function DashboardClient() {
   const router = useRouter();
   const setAlbum = useDocumentStore((s) => s.setAlbum);
 
-  useEffect(() => {
+  const refreshAlbums = useCallback(() => {
     setAlbums(getSavedAlbums());
-    setLoaded(true);
   }, []);
+
+  useEffect(() => {
+    refreshAlbums();
+    setLoaded(true);
+  }, [refreshAlbums]);
 
   function handleLoadDemo() {
     const demo = createDemoAlbum();
     setAlbum(demo);
     router.push(`/album/${demo.id}`);
+  }
+
+  function handleDeleteAlbum(albumId: string, albumTitle: string) {
+    if (!confirm(`حذف "${albumTitle}"؟ لا يمكن التراجع عن هذا الإجراء.`)) return;
+    try {
+      localStorage.removeItem(`aj-album-${albumId}`);
+      refreshAlbums();
+    } catch {
+      // ignore
+    }
   }
 
   return (
@@ -70,11 +84,17 @@ export function DashboardClient() {
           </div>
         </div>
 
+        {/* Album count */}
+        {loaded && albums.length > 0 && (
+          <p style={{ fontSize: 13, color: '#7d8590', marginBottom: 16, marginTop: -20 }}>
+            {albums.length} ألبوم
+          </p>
+        )}
+
         {/* Album grid */}
         {!loaded ? (
           <div className={styles.emptyState}>
-            <span className={styles.emptyIcon}>⏳</span>
-            <p>جاري التحميل...</p>
+            <p style={{ color: '#7d8590' }}>جاري التحميل...</p>
           </div>
         ) : albums.length === 0 ? (
           <div className={styles.emptyState}>
@@ -110,15 +130,36 @@ export function DashboardClient() {
                   </h3>
                   <div className={styles.cardMeta}>
                     <span>{album.slideCount} شريحة</span>
-                    <span className={styles.dot}>·</span>
+                    <span className={styles.dot}>&middot;</span>
                     <span>{formatDate(album.updatedAt)}</span>
                   </div>
-                  <Link
-                    href={`/album/${album.id}`}
-                    className={styles.openBtn}
-                  >
-                    فتح
-                  </Link>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <Link
+                      href={`/album/${album.id}`}
+                      className={styles.openBtn}
+                    >
+                      فتح
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleDeleteAlbum(album.id, album.title); }}
+                      style={{
+                        background: 'transparent',
+                        border: '1px solid #30363d',
+                        borderRadius: 5,
+                        color: '#7d8590',
+                        padding: '7px 12px',
+                        fontSize: 13,
+                        cursor: 'pointer',
+                        fontFamily: 'var(--brand-font-family)',
+                        transition: 'color 0.15s, border-color 0.15s',
+                      }}
+                      onMouseEnter={(e) => { (e.target as HTMLElement).style.color = '#F44336'; (e.target as HTMLElement).style.borderColor = '#F44336'; }}
+                      onMouseLeave={(e) => { (e.target as HTMLElement).style.color = '#7d8590'; (e.target as HTMLElement).style.borderColor = '#30363d'; }}
+                    >
+                      حذف
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

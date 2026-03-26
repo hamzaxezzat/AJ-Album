@@ -7,6 +7,7 @@ import { BannerSection } from './BannerSection';
 import { LayoutSection } from './LayoutSection';
 import { AlbumSettingsPanel } from './AlbumSettingsPanel';
 import { SlideOverridesSection } from './SlideOverridesSection';
+import { GuardrailPanel } from './GuardrailPanel';
 
 type LogoVariant = 'auto' | 'dark' | 'white';
 type PanelTab = 'album' | 'slide';
@@ -121,6 +122,13 @@ export function PropertiesPanel({
               slide={slide}
               onUpdateLogoVariant={onUpdateLogoVariant}
               onUpdateSource={onUpdateSource}
+            />
+
+            {/* Guardrail warnings */}
+            <GuardrailPanel
+              slide={slide}
+              album={album}
+              channelProfile={channelProfile}
             />
           </div>
         )}

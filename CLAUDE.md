@@ -203,22 +203,47 @@ src/components/Editor/
   RichTextEditor.tsx                        TipTap editor (Bold/Italic/Strike/Highlight/Color/Lists)
   RichTextEditor.module.css
   hooks/useCanvasScale.ts                   ResizeObserver responsive canvas hook
+  hooks/useBlockUpdates.ts                  SOLID: all block/content update handlers
+  hooks/useSlideManagement.ts               SOLID: slide add/delete/duplicate
+  hooks/useExport.ts                        SOLID: PNG + ZIP export with guardrail gate
   lib/slideFactory.ts                       makeBlankSlide() + plainToRichText()
   lib/compressImage.ts                      Image compression utility
   lib/textReformat.ts                       Content transforms: toBullets/toNumbered/toPlain/splitBySentences
-  panels/PropertiesPanel.tsx                Right panel router → 4 block sections
+  panels/PropertiesPanel.tsx                Right panel router → 4 block sections + guardrails
   panels/SlideStrip.tsx                     Left slide navigator + thumbnails
   panels/SlideThumbnail.tsx                 Zoom-based slide thumbnail
   panels/ImageSection.tsx                   Block 4: Image upload + preview
   panels/TextSection.tsx                    Block 3: Title + body editors + font size + reformat
   panels/BannerSection.tsx                  Block 2: Position picker + height slider
   panels/LayoutSection.tsx                  Block 1: Logo variant toggle + source
+  panels/GuardrailPanel.tsx                 Real-time guardrail warnings per slide
   panels/styles.ts                          Shared inline style constants
   canvas/CanvasInteractionLayer.tsx          Click/double-click/drag on canvas blocks
   canvas/InlineTextEditor.tsx               TipTap editor positioned at block on canvas
   canvas/FloatingToolbar.tsx                Formatting toolbar (Canva-style)
   canvas/useDragBlock.ts                    Drag-to-reposition hook
 src/lib/demoAlbum.ts                        createDemoAlbum() — 5-slide علي عبد اللهي album (seeder)
+src/lib/guardrails/
+  types.ts                                  GuardrailRule, GuardrailContext interfaces
+  engine.ts                                 GuardrailEngine: runs rules, export gate check
+  index.ts                                  Barrel export
+  rules/contrastRule.ts                     Hard stop: contrast ratio ≥ 3:1 (WCAG)
+  rules/fontRule.ts                         Hard stop: font availability check
+  rules/overflowRule.ts                     Warning: text overflow detection
+  rules/boldRule.ts                         Warning: >40% body bold
+  rules/highlightRule.ts                    Warning: >2 highlight colors per slide
+  rules/bannerFocalRule.ts                  Warning: banner overlaps image focal point
+src/lib/export/
+  types.ts                                  ClientExporter, ExportProgress interfaces
+  ZipExporter.ts                            ZIP export bundler (JSZip or minimal fallback)
+  index.ts                                  Barrel export
+src/store/historyStore.ts                   50-step undo/redo memento store (Zustand)
+config/templates/
+  bullet_points.json                        قائمة نقطية archetype template
+  credentials_facts.json                    بيانات شخصية archetype template
+  highlighted_statement.json                جملة بارزة archetype template
+  source_heavy.json                         معلومات متنوعة archetype template
+  basic_infographic.json                    بطاقة بيانات archetype template
 src/app/page.tsx                            → DashboardClient
 src/app/album/new/page.tsx                  → NewAlbumWizard
 src/app/album/[id]/page.tsx                 → EditorClient (async params)
@@ -244,8 +269,16 @@ After AJ Reviewer audit, three gate conditions were fixed:
 ### Status
 - `pnpm typecheck` — zero errors (Next.js app)
 - `pnpm --filter @aj-album/export-service tsc --noEmit` — zero errors
-- `pnpm test` — 19/19 tests passing (includes canvas config cascade test)
+- `pnpm test` — 100/100 tests passing
 - MVP-0 gate pending: Arabic kashida validation requires running `pnpm dev` + export service together to compare browser vs Puppeteer PNG output
+
+### MVP-1 Core Systems (2026-03-26)
+- **Guardrail Engine**: 6 rules (contrast, font, overflow, bold, highlight, banner-focal). Runs per-slide in editor (real-time GuardrailPanel) + export gate (ZipExporter blocks on hard stops). Types reuse `GuardrailIssue`/`GuardrailResult` from album.ts.
+- **History/Undo**: `historyStore.ts` — 50-step memento via JSON snapshots. Keyboard shortcuts Ctrl+Z / Ctrl+Shift+Z. Skips push during undo/redo replay.
+- **ZIP Export**: `ZipExporter` calls export service per slide, bundles via JSZip (or minimal built-in ZIP if JSZip unavailable). Export gate checks guardrails before starting.
+- **SOLID Refactor**: EditorClient is now a thin shell. Business logic extracted to 3 hooks: `useBlockUpdates` (content mutations + history push), `useSlideManagement` (add/delete/duplicate), `useExport` (PNG + ZIP with progress tracking).
+- **Dashboard**: Added album delete with confirmation, album count display.
+- **Slide Templates**: All 6 archetypes now have template JSON files in `config/templates/`.
 
 ### SlideRenderer Inline Style Architecture
 `SlideRenderer` does NOT rely on CSS Modules for the root element. All critical layout
