@@ -76,7 +76,7 @@
     "heading-xl": {
       "fontFamily": "'Al-Jazeera', Cairo, 'IBM Plex Arabic', sans-serif",
       "fontWeight": 700,
-      "fontSize": 46,
+      "fontSize": 64,
       "lineHeight": 1.25,
       "letterSpacing": -0.02,
       "textAlign": "right",
@@ -85,7 +85,7 @@
     "heading-l": {
       "fontFamily": "'Al-Jazeera', Cairo, 'IBM Plex Arabic', sans-serif",
       "fontWeight": 700,
-      "fontSize": 48,
+      "fontSize": 56,
       "lineHeight": 1.3,
       "letterSpacing": -0.01,
       "textAlign": "right",
@@ -94,7 +94,7 @@
     "heading-m": {
       "fontFamily": "'Al-Jazeera', 'IBM Plex Arabic', Cairo, sans-serif",
       "fontWeight": 600,
-      "fontSize": 26,
+      "fontSize": 40,
       "lineHeight": 1.35,
       "letterSpacing": 0,
       "textAlign": "right",
@@ -103,8 +103,8 @@
     "body-m": {
       "fontFamily": "'Al-Jazeera', 'IBM Plex Arabic', sans-serif",
       "fontWeight": 400,
-      "fontSize": 32,
-      "lineHeight": 1.65,
+      "fontSize": 38,
+      "lineHeight": 1.6,
       "letterSpacing": 0,
       "textAlign": "right",
       "direction": "rtl"
@@ -112,7 +112,7 @@
     "body-s": {
       "fontFamily": "'Al-Jazeera', 'IBM Plex Arabic', sans-serif",
       "fontWeight": 400,
-      "fontSize": 14,
+      "fontSize": 22,
       "lineHeight": 1.5,
       "letterSpacing": 0,
       "textAlign": "right",
@@ -130,7 +130,7 @@
     "label": {
       "fontFamily": "'Al-Jazeera', 'IBM Plex Arabic', sans-serif",
       "fontWeight": 400,
-      "fontSize": 12,
+      "fontSize": 18,
       "lineHeight": 1.4,
       "letterSpacing": 0.02,
       "textAlign": "right",
