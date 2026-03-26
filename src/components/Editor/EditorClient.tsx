@@ -10,6 +10,7 @@ import type {
   RichTextContent,
 } from '@/types/album';
 import { SlideRenderer } from '@/components/SlideRenderer';
+import { RichTextEditor } from './RichTextEditor';
 import { useDocumentStore } from '@/store/documentStore';
 import { useEditorUIStore } from '@/store/editorUIStore';
 import ajMainRaw from '../../../config/brands/aj-main.json';
@@ -52,19 +53,6 @@ const ARCHETYPE_LABELS: Record<string, string> = {
   infographic_assembly: 'إنفوغرافيك',
   free_slide: 'حرة',
 };
-
-function richTextToPlain(content: RichTextContent | null | undefined): string {
-  if (!content || content.type !== 'doc') return '';
-  const nodes = content.content as Array<{
-    type: string;
-    content?: Array<{ type: string; text?: string }>;
-  }>;
-  return nodes
-    .flatMap((n) => n.content ?? [])
-    .filter((n) => n.type === 'text')
-    .map((n) => n.text ?? '')
-    .join('');
-}
 
 function plainToRichText(text: string): RichTextContent {
   return {
@@ -213,8 +201,8 @@ function SlideStripItem({ slide, album, isSelected, onClick, onDelete, onDuplica
 
 interface PropertiesPanelProps {
   slide: Slide;
-  onUpdateTitle: (text: string) => void;
-  onUpdateBody: (text: string) => void;
+  onUpdateTitle: (content: RichTextContent) => void;
+  onUpdateBody: (content: RichTextContent) => void;
   onUpdateBanner: (pos: BannerPosition) => void;
   onUpdateSource: (text: string) => void;
   onUploadImage: (dataUrl: string) => void;
@@ -236,8 +224,8 @@ function PropertiesPanel({
     | BodyParagraphBlock
     | undefined;
 
-  const titleText = titleBlock ? richTextToPlain(titleBlock.content) : '';
-  const bodyText = bodyBlock ? richTextToPlain(bodyBlock.content) : '';
+  const titleContent = titleBlock?.content ?? null;
+  const bodyContent = bodyBlock?.content ?? null;
   const sourceText = slide.source?.text ?? '';
   const bannerPos = slide.banner?.position ?? 'none';
   const imageUrl = slide.image?.asset?.url ?? null;
@@ -301,27 +289,21 @@ function PropertiesPanel({
 
       <div className={styles.propSection}>
         <label className={styles.propLabel}>العنوان</label>
-        <textarea
-          className={styles.propTextarea}
-          dir="rtl"
-          lang="ar"
-          rows={3}
-          value={titleText}
-          onChange={(e) => onUpdateTitle(e.target.value)}
+        <RichTextEditor
+          value={titleContent}
+          onChange={onUpdateTitle}
           placeholder="عنوان الشريحة"
+          minHeight={60}
         />
       </div>
 
       <div className={styles.propSection}>
         <label className={styles.propLabel}>النص</label>
-        <textarea
-          className={styles.propTextarea}
-          dir="rtl"
-          lang="ar"
-          rows={6}
-          value={bodyText}
-          onChange={(e) => onUpdateBody(e.target.value)}
+        <RichTextEditor
+          value={bodyContent}
+          onChange={onUpdateBody}
           placeholder="نص الشريحة"
+          minHeight={120}
         />
       </div>
 
@@ -389,12 +371,12 @@ export function EditorClient({ albumId }: { albumId: string }) {
   const selectedSlide = album?.slides.find((s) => s.id === selectedSlideId) ?? null;
 
   const handleUpdateTitle = useCallback(
-    (text: string) => {
+    (content: RichTextContent) => {
       if (!selectedSlide) return;
       updateSlide(selectedSlide.id, (slide) => {
         const block = slide.blocks.find((b) => b.type === 'main_title');
         if (block && block.type === 'main_title') {
-          (block as MainTitleBlock).content = plainToRichText(text);
+          (block as MainTitleBlock).content = content;
         }
       });
     },
@@ -402,12 +384,12 @@ export function EditorClient({ albumId }: { albumId: string }) {
   );
 
   const handleUpdateBody = useCallback(
-    (text: string) => {
+    (content: RichTextContent) => {
       if (!selectedSlide) return;
       updateSlide(selectedSlide.id, (slide) => {
         const block = slide.blocks.find((b) => b.type === 'body_paragraph');
         if (block && block.type === 'body_paragraph') {
-          (block as BodyParagraphBlock).content = plainToRichText(text);
+          (block as BodyParagraphBlock).content = content;
         }
       });
     },
@@ -451,7 +433,7 @@ export function EditorClient({ albumId }: { albumId: string }) {
       updateSlide(selectedSlide.id, (slide) => {
         slide.image = {
           asset: { id: slide.id, url: dataUrl, mimeType: 'image/jpeg', width: 1080, height: 1350 },
-          rect: { x: 0, y: 0, width: 1, height: 1 },
+          rect: { x: 0, y: 0, width: 1, height: 0.54 },
           objectFit: 'cover',
           focalPoint: { x: 0.5, y: 0.5 },
         };

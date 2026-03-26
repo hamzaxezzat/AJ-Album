@@ -1,7 +1,9 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getSavedAlbums } from '@/store/documentStore';
+import { getSavedAlbums, useDocumentStore } from '@/store/documentStore';
+import { createDemoAlbum } from '@/lib/demoAlbum';
 import styles from './Dashboard.module.css';
 
 type AlbumSummary = {
@@ -26,11 +28,19 @@ function formatDate(iso: string): string {
 export function DashboardClient() {
   const [albums, setAlbums] = useState<AlbumSummary[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const router = useRouter();
+  const setAlbum = useDocumentStore((s) => s.setAlbum);
 
   useEffect(() => {
     setAlbums(getSavedAlbums());
     setLoaded(true);
   }, []);
+
+  function handleLoadDemo() {
+    const demo = createDemoAlbum();
+    setAlbum(demo);
+    router.push(`/album/${demo.id}`);
+  }
 
   return (
     <div className={styles.root}>
@@ -50,9 +60,14 @@ export function DashboardClient() {
         {/* Section header */}
         <div className={styles.sectionHeader}>
           <h1 className={styles.sectionTitle}>ألبوماتي</h1>
-          <Link href="/album/new" className={styles.newAlbumBtn}>
-            + ألبوم جديد
-          </Link>
+          <div className={styles.headerActions}>
+            <button type="button" className={styles.demoBtn} onClick={handleLoadDemo}>
+              تحميل النموذج التجريبي
+            </button>
+            <Link href="/album/new" className={styles.newAlbumBtn}>
+              + ألبوم جديد
+            </Link>
+          </div>
         </div>
 
         {/* Album grid */}

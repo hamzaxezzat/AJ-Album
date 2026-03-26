@@ -104,6 +104,31 @@
   background: #b71c1c;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.demoBtn {
+  display: inline-flex;
+  align-items: center;
+  background: #21262d;
+  color: #c9d1d9;
+  font-family: 'IBM Plex Arabic', Cairo, sans-serif;
+  font-size: 13px;
+  padding: 9px 16px;
+  border-radius: 6px;
+  border: 1px solid #30363d;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.demoBtn:hover {
+  background: #30363d;
+}
+
 /* Empty state */
 .emptyState {
   text-align: center;

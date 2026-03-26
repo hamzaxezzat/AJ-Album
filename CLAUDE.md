@@ -200,6 +200,9 @@ src/components/NewAlbum/
   NewAlbumWizard.tsx                        2-step wizard: album setup → paste+parse script
 src/components/Editor/
   EditorClient.tsx                          3-panel editor: slide strip + canvas + properties
+  RichTextEditor.tsx                        TipTap rich text editor (Bold/Italic/Strike/Highlight/Color)
+  RichTextEditor.module.css
+src/lib/demoAlbum.ts                        createDemoAlbum() — 5-slide علي عبد اللهي album (seeder)
 src/app/page.tsx                            → DashboardClient
 src/app/album/new/page.tsx                  → NewAlbumWizard
 src/app/album/[id]/page.tsx                 → EditorClient (async params)
@@ -235,5 +238,9 @@ After AJ Reviewer audit, three gate conditions were fixed:
 - Canvas displayed at `scale(0.5)` in editor (540px display for 1080px canvas, 675px display height)
 - Export button in editor POSTs to export-service at localhost:3001 — must be running separately
 - **Data migration**: `documentStore.loadFromLocalStorage` runs `migrateAlbum()` on every load, fixing old landscape albums (1350×1080 → 1080×1350), missing `typographyTokenRef`, and landscape-era block positions (y>0.5 → correct portrait positions)
-- **Image upload**: compressImage() resizes to max 1080×1350 at JPEG 82% quality before localStorage (~150-400KB per image)
+- **Image upload**: compressImage() resizes to max 1080×1350 at JPEG 82% quality before localStorage (~150-400KB per image). Images stored in IndexedDB (`aj-album-images` DB), localStorage holds `idb://{assetId}` refs. In-memory state always has resolved data URLs.
+- **Image rect**: uploaded images use `rect: { x:0, y:0, width:1, height:0.54 }` — top 54% only, matching reference design
 - **Test page**: `/test-render` renders a hardcoded Arabic demo slide — visit to isolate renderer bugs from localStorage data bugs
+- **Demo album**: Dashboard has "تحميل النموذج التجريبي" button → calls `createDemoAlbum()` → sets Zustand store → navigates to editor
+- **RichTextEditor**: TipTap editor with Bold, Italic, Strike, Yellow Highlight, and color presets (red/white/black/grey). Used in Properties Panel for title and body blocks. `onChange` receives full `RichTextContent` (ProseMirror JSON).
+- **Slide reference layout**: image top 54%, white background below, RED title at y=0.56 (accentPrimary), body at y=0.69, no banner, AJ logo top-left overlay (zIndex 50), footer: social handles + pagination dots
