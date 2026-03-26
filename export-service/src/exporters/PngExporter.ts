@@ -251,19 +251,35 @@ function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): stri
     `<div style="width:8px;height:8px;border-radius:50%;background:${i === slide.number - 1 ? accentColor : '#CCC'};"></div>`
   ).join('');
 
+  // Generate @font-face from channel profile fontFiles (same fonts as the editor)
+  const channelProfile = ctx.channelProfile;
+  const fontFiles = (channelProfile as any)?.fontFiles as Array<{ family: string; weight: number; url: string; format: string }> ?? [];
+  const primaryFontFamily = (channelProfile as any)?.primaryFontFamily as string ?? "'IBM Plex Arabic', Cairo, sans-serif";
+
+  // Font URLs in the profile are like "/fonts/AlJazeera-Regular.ttf"
+  // fontBase is like "http://localhost:3000/fonts"
+  // So we strip the "/fonts" prefix from the URL to avoid duplication
+  const fontFaces = fontFiles.map(f => {
+    const filePath = f.url.startsWith('/fonts/') ? f.url.slice(6) : f.url.startsWith('/') ? f.url : '/' + f.url;
+    return `@font-face { font-family:'${f.family}'; src:url('${fontBase}${filePath}') format('${f.format}'); font-weight:${f.weight}; font-style:normal; font-display:block; }`;
+  }).join('\n    ');
+
+  // Fallback: always include IBM Plex Arabic + Cairo
+  const fallbackFonts = `
+    @font-face { font-family:'IBM Plex Arabic'; src:url('${fontBase}/IBMPlexArabic-Regular.woff2') format('woff2'); font-weight:400; font-display:block; }
+    @font-face { font-family:'IBM Plex Arabic'; src:url('${fontBase}/IBMPlexArabic-Bold.woff2') format('woff2'); font-weight:700; font-display:block; }
+    @font-face { font-family:'Cairo'; src:url('${fontBase}/Cairo-Regular.woff2') format('woff2'); font-weight:400; font-display:block; }
+    @font-face { font-family:'Cairo'; src:url('${fontBase}/Cairo-Bold.woff2') format('woff2'); font-weight:700; font-display:block; }`;
+
   return `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
   <meta charset="UTF-8">
   <style>
-    @font-face { font-family:'IBM Plex Arabic'; src:url('${fontBase}/IBMPlexArabic-Regular.woff2') format('woff2'); font-weight:400; font-display:block; }
-    @font-face { font-family:'IBM Plex Arabic'; src:url('${fontBase}/IBMPlexArabic-SemiBold.woff2') format('woff2'); font-weight:600; font-display:block; }
-    @font-face { font-family:'IBM Plex Arabic'; src:url('${fontBase}/IBMPlexArabic-Bold.woff2') format('woff2'); font-weight:700; font-display:block; }
-    @font-face { font-family:'Cairo'; src:url('${fontBase}/Cairo-Regular.woff2') format('woff2'); font-weight:400; font-display:block; }
-    @font-face { font-family:'Cairo'; src:url('${fontBase}/Cairo-SemiBold.woff2') format('woff2'); font-weight:600; font-display:block; }
-    @font-face { font-family:'Cairo'; src:url('${fontBase}/Cairo-Bold.woff2') format('woff2'); font-weight:700; font-display:block; }
+    ${fontFaces}
+    ${fallbackFonts}
     *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-    body { width:${width}px; height:${height}px; overflow:hidden; background:#fff; font-family:'IBM Plex Arabic',Cairo,sans-serif; direction:rtl; -webkit-font-smoothing:antialiased; }
+    body { width:${width}px; height:${height}px; overflow:hidden; background:#fff; font-family:${primaryFontFamily}; direction:rtl; -webkit-font-smoothing:antialiased; }
     .slide { position:relative; width:${width}px; height:${height}px; background:#fff; overflow:hidden; }
     .image-zone { position:absolute; top:calc(${height}px * ${imageRect.y}); left:calc(${width}px * ${imageRect.x}); width:calc(${width}px * ${imageRect.width}); height:calc(${height}px * ${imageRect.height}); background:#E0E0E0; overflow:hidden; z-index:1; display:flex; align-items:center; justify-content:center; color:#9E9E9E; font-size:20px; }
     .image-zone img { width:100%; height:100%; object-fit:${slide.image?.objectFit ?? 'cover'}; }
