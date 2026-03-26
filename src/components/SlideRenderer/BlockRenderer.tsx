@@ -164,6 +164,7 @@ export function BlockRenderer({ block, tokens }: BlockRendererProps) {
 
     case 'body_paragraph': {
       const overrideAlign = block.styleOverrides?.textAlign;
+      const isJustified = overrideAlign === 'justify' || (!overrideAlign && block.kashidaEnabled);
       return (
         <div
           className={styles.bodyBlock}
@@ -171,9 +172,8 @@ export function BlockRenderer({ block, tokens }: BlockRendererProps) {
             ...baseStyle,
             ...typoStyle(block.typographyTokenRef, tokens.typography, block.styleOverrides),
             color: block.styleOverrides?.color ?? tokens.bodyColor,
-            // THE CRITICAL ARABIC KASHIDA PROPERTY (only when not overriding alignment)
-            textJustify: (!overrideAlign && block.kashidaEnabled) ? ('kashida' as React.CSSProperties['textJustify']) : 'auto',
-            textAlign: overrideAlign ?? (block.kashidaEnabled ? 'justify' : undefined),
+            textAlign: isJustified ? 'justify' : (overrideAlign ?? undefined),
+            textJustify: (isJustified && block.kashidaEnabled) ? ('kashida' as React.CSSProperties['textJustify']) : undefined,
           }}
           dangerouslySetInnerHTML={{ __html: richTextToHtml(block.content) }}
         />
@@ -658,6 +658,7 @@ export function BlockRenderer({ block, tokens }: BlockRendererProps) {
 
     case 'text_box': {
       const overrideAlign = block.styleOverrides?.textAlign;
+      const isJustified = overrideAlign === 'justify' || (!overrideAlign && block.kashidaEnabled);
       return (
         <div
           className={styles.bodyBlock}
@@ -665,8 +666,8 @@ export function BlockRenderer({ block, tokens }: BlockRendererProps) {
             ...baseStyle,
             ...typoStyle(block.typographyTokenRef, tokens.typography, block.styleOverrides),
             color: block.styleOverrides?.color ?? tokens.textPrimary,
-            textJustify: (!overrideAlign && block.kashidaEnabled) ? ('kashida' as React.CSSProperties['textJustify']) : 'auto',
-            textAlign: overrideAlign ?? (block.kashidaEnabled ? 'justify' : undefined),
+            textAlign: isJustified ? 'justify' : (overrideAlign ?? undefined),
+            textJustify: (isJustified && block.kashidaEnabled) ? ('kashida' as React.CSSProperties['textJustify']) : undefined,
           }}
           dangerouslySetInnerHTML={{ __html: richTextToHtml(block.content) }}
         />

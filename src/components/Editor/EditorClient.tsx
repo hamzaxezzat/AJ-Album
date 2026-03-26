@@ -141,9 +141,18 @@ export function EditorClient({ albumId }: { albumId: string }) {
       if (block.type === 'body_paragraph') {
         const b = block as import('@/types/album').BodyParagraphBlock;
         b.kashidaEnabled = !b.kashidaEnabled;
+        // Kashida requires justify — auto-set it when enabling
+        if (b.kashidaEnabled) {
+          if (!b.styleOverrides) b.styleOverrides = {};
+          b.styleOverrides.textAlign = 'justify';
+        }
       } else if (block.type === 'text_box') {
         const b = block as import('@/types/album').TextBoxBlock;
         b.kashidaEnabled = !b.kashidaEnabled;
+        if (b.kashidaEnabled) {
+          if (!b.styleOverrides) b.styleOverrides = {};
+          b.styleOverrides.textAlign = 'justify';
+        }
       }
     });
   }, [selectedSlide]);
