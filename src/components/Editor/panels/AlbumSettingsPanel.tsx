@@ -1,5 +1,6 @@
 'use client';
-import type { AlbumTheme, ChannelProfile, BannerPosition, BulletStyle, Density } from '@/types/album';
+import { useState } from 'react';
+import type { AlbumTheme, ChannelProfile, BannerPosition, BulletStyle, BulletConnectorConfig } from '@/types/album';
 import { LABEL_STYLE, toggleBtnStyle } from './styles';
 
 interface AlbumSettingsPanelProps {
@@ -7,6 +8,12 @@ interface AlbumSettingsPanelProps {
   channelProfile: ChannelProfile;
   onUpdateTheme: (updater: (theme: AlbumTheme) => void) => void;
 }
+
+const TITLE_COLOR_PRESETS = [
+  { label: 'أحمر', hex: '#D32F2F' },
+  { label: 'أزرق', hex: '#1565C0' },
+  { label: 'أسود', hex: '#212121' },
+];
 
 const BANNER_OPTIONS: { value: BannerPosition; label: string }[] = [
   { value: 'top', label: 'أعلى' },
@@ -16,12 +23,6 @@ const BANNER_OPTIONS: { value: BannerPosition; label: string }[] = [
   { value: 'none', label: 'بدون' },
 ];
 
-const DENSITY_OPTIONS: { value: Density; label: string }[] = [
-  { value: 'compact', label: 'مكثف' },
-  { value: 'normal', label: 'عادي' },
-  { value: 'spacious', label: 'واسع' },
-];
-
 const BULLET_OPTIONS: { value: BulletStyle; label: string }[] = [
   { value: 'square', label: '■' },
   { value: 'circle', label: '●' },
@@ -29,118 +30,103 @@ const BULLET_OPTIONS: { value: BulletStyle; label: string }[] = [
   { value: 'none', label: 'بدون' },
 ];
 
+const LINE_STYLE_OPTIONS: { value: BulletConnectorConfig['style']; label: string }[] = [
+  { value: 'solid', label: '━ خط' },
+  { value: 'dashed', label: '┅ متقطع' },
+  { value: 'dotted', label: '··· نقاط' },
+];
+
+const CONNECTOR_COLOR_PRESETS = [
+  { label: 'رمادي', hex: '#CCCCCC' },
+  { label: 'أحمر', hex: '#D32F2F' },
+  { label: 'أسود', hex: '#212121' },
+];
+
 export function AlbumSettingsPanel({ theme, channelProfile, onUpdateTheme }: AlbumSettingsPanelProps) {
-  const palette = channelProfile.colors.palette;
   const headingToken = channelProfile.typography['heading-l'];
   const bodyToken = channelProfile.typography['body-m'];
   const effectiveTitleSize = theme.titleFontSize ?? headingToken.fontSize;
   const effectiveBodySize = theme.bodyFontSize ?? bodyToken.fontSize;
   const effectiveTitleColor = theme.titleColor ?? theme.primaryColor;
-  const effectiveBodyColor = theme.bodyColor ?? '#1A1A1A';
+  const effectiveBulletSize = theme.bulletSize ?? 8;
+  const connector = theme.bulletConnector ?? { enabled: false, style: 'solid' as const, width: 1, color: '#CCCCCC' };
+
+  const [hexInput, setHexInput] = useState(effectiveTitleColor);
+  const [connectorHexInput, setConnectorHexInput] = useState(connector.color);
+
+  const updateConnector = (patch: Partial<BulletConnectorConfig>) => {
+    onUpdateTheme(t => {
+      t.bulletConnector = { ...connector, ...patch };
+    });
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-      {/* Primary accent color */}
-      <div>
-        <label style={LABEL_STYLE}>اللون الرئيسي</label>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {palette.map(c => (
-            <ColorBtn
-              key={c.hex}
-              hex={c.hex}
-              active={theme.primaryColor === c.hex}
-              onClick={() => onUpdateTheme(t => { t.primaryColor = c.hex; })}
-              title={c.label}
-            />
-          ))}
-        </div>
-      </div>
 
-      {/* Title color */}
+      {/* ── Title color ── */}
       <div>
         <label style={LABEL_STYLE}>لون العنوان</label>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {palette.map(c => (
-            <ColorBtn
-              key={c.hex}
-              hex={c.hex}
-              active={effectiveTitleColor === c.hex}
-              onClick={() => onUpdateTheme(t => { t.titleColor = c.hex; })}
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+          {TITLE_COLOR_PRESETS.map(c => (
+            <ColorBtn key={c.hex} hex={c.hex} active={effectiveTitleColor === c.hex}
+              onClick={() => { onUpdateTheme(t => { t.titleColor = c.hex; }); setHexInput(c.hex); }}
               title={c.label}
             />
           ))}
-          <ResetBtn
-            visible={!!theme.titleColor}
-            onClick={() => onUpdateTheme(t => { delete t.titleColor; })}
-          />
-        </div>
-      </div>
-
-      {/* Body color */}
-      <div>
-        <label style={LABEL_STYLE}>لون النص</label>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {[...palette, { hex: '#1A1A1A', label: 'أسود', role: 'dark' }].map(c => (
-            <ColorBtn
-              key={c.hex}
-              hex={c.hex}
-              active={effectiveBodyColor === c.hex}
-              onClick={() => onUpdateTheme(t => { t.bodyColor = c.hex; })}
-              title={c.label}
+          <span style={{ width: 1, height: 22, background: '#30363d', margin: '0 4px' }} />
+          {/* Hex input */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div style={{
+              width: 22, height: 22, borderRadius: 4,
+              background: effectiveTitleColor, border: '2px solid #444',
+              flexShrink: 0,
+            }} />
+            <input
+              type="text"
+              value={hexInput}
+              onChange={(e) => {
+                setHexInput(e.target.value);
+                if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) {
+                  onUpdateTheme(t => { t.titleColor = e.target.value; });
+                }
+              }}
+              placeholder="#D32F2F"
+              style={{
+                width: 80, padding: '4px 6px', fontSize: 12,
+                background: '#0d1117', border: '1px solid #30363d',
+                borderRadius: 4, color: '#e6edf3', fontFamily: 'monospace',
+                direction: 'ltr', textAlign: 'left',
+              }}
             />
-          ))}
-          <ResetBtn
-            visible={!!theme.bodyColor}
-            onClick={() => onUpdateTheme(t => { delete t.bodyColor; })}
-          />
+          </div>
         </div>
       </div>
 
-      {/* Title font size */}
+      {/* ── Title font size ── */}
       <div>
         <label style={LABEL_STYLE}>حجم العنوان ({effectiveTitleSize}px)</label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <SizeBtn label="−" onClick={() => onUpdateTheme(t => { t.titleFontSize = Math.max(20, effectiveTitleSize - 2); })} />
-          <input
-            type="range" min={20} max={72} step={1}
-            value={effectiveTitleSize}
+          <input type="range" min={20} max={72} step={1} value={effectiveTitleSize}
             onChange={(e) => onUpdateTheme(t => { t.titleFontSize = parseInt(e.target.value); })}
-            style={{ flex: 1, accentColor: '#D32F2F' }}
-          />
+            style={{ flex: 1, accentColor: '#D32F2F' }} />
           <SizeBtn label="+" onClick={() => onUpdateTheme(t => { t.titleFontSize = Math.min(72, effectiveTitleSize + 2); })} />
         </div>
       </div>
 
-      {/* Body font size */}
+      {/* ── Body font size ── */}
       <div>
         <label style={LABEL_STYLE}>حجم النص ({effectiveBodySize}px)</label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <SizeBtn label="−" onClick={() => onUpdateTheme(t => { t.bodyFontSize = Math.max(12, effectiveBodySize - 2); })} />
-          <input
-            type="range" min={12} max={48} step={1}
-            value={effectiveBodySize}
+          <input type="range" min={12} max={48} step={1} value={effectiveBodySize}
             onChange={(e) => onUpdateTheme(t => { t.bodyFontSize = parseInt(e.target.value); })}
-            style={{ flex: 1, accentColor: '#D32F2F' }}
-          />
+            style={{ flex: 1, accentColor: '#D32F2F' }} />
           <SizeBtn label="+" onClick={() => onUpdateTheme(t => { t.bodyFontSize = Math.min(48, effectiveBodySize + 2); })} />
         </div>
       </div>
 
-      {/* Density */}
-      <div>
-        <label style={LABEL_STYLE}>المسافات</label>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {DENSITY_OPTIONS.map(opt => (
-            <button key={opt.value} type="button"
-              onClick={() => onUpdateTheme(t => { t.density = opt.value; })}
-              style={{ ...toggleBtnStyle(theme.density === opt.value), flex: 1, padding: '5px 0' }}>
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Bullet style */}
+      {/* ── Bullet style ── */}
       <div>
         <label style={LABEL_STYLE}>نمط النقاط</label>
         <div style={{ display: 'flex', gap: 6 }}>
@@ -154,7 +140,84 @@ export function AlbumSettingsPanel({ theme, channelProfile, onUpdateTheme }: Alb
         </div>
       </div>
 
-      {/* Default banner position */}
+      {/* ── Bullet size ── */}
+      <div>
+        <label style={LABEL_STYLE}>حجم النقطة ({effectiveBulletSize}px)</label>
+        <input type="range" min={4} max={20} step={1} value={effectiveBulletSize}
+          onChange={(e) => onUpdateTheme(t => { t.bulletSize = parseInt(e.target.value); })}
+          style={{ width: '100%', accentColor: '#D32F2F' }} />
+      </div>
+
+      {/* ── Connector line ── */}
+      <div>
+        <label style={LABEL_STYLE}>خط الربط بين النقاط</label>
+        {/* Toggle */}
+        <div style={{ display: 'flex', gap: 6, marginBottom: connector.enabled ? 10 : 0 }}>
+          <button type="button" onClick={() => updateConnector({ enabled: true })}
+            style={{ ...toggleBtnStyle(connector.enabled), flex: 1, padding: '5px 0' }}>
+            مفعّل
+          </button>
+          <button type="button" onClick={() => updateConnector({ enabled: false })}
+            style={{ ...toggleBtnStyle(!connector.enabled), flex: 1, padding: '5px 0' }}>
+            معطّل
+          </button>
+        </div>
+
+        {connector.enabled && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 10, background: '#0d1117', borderRadius: 6, border: '1px solid #21262d' }}>
+            {/* Line style */}
+            <div>
+              <span style={{ fontSize: 10, color: '#7d8590', display: 'block', marginBottom: 4 }}>نوع الخط</span>
+              <div style={{ display: 'flex', gap: 4 }}>
+                {LINE_STYLE_OPTIONS.map(opt => (
+                  <button key={opt.value} type="button"
+                    onClick={() => updateConnector({ style: opt.value })}
+                    style={{ ...toggleBtnStyle(connector.style === opt.value), flex: 1, padding: '4px 0', fontSize: 11 }}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Line width */}
+            <div>
+              <span style={{ fontSize: 10, color: '#7d8590', display: 'block', marginBottom: 4 }}>
+                سمك الخط ({connector.width}px)
+              </span>
+              <input type="range" min={1} max={5} step={0.5} value={connector.width}
+                onChange={(e) => updateConnector({ width: parseFloat(e.target.value) })}
+                style={{ width: '100%', accentColor: '#D32F2F' }} />
+            </div>
+
+            {/* Line color */}
+            <div>
+              <span style={{ fontSize: 10, color: '#7d8590', display: 'block', marginBottom: 4 }}>لون الخط</span>
+              <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+                {CONNECTOR_COLOR_PRESETS.map(c => (
+                  <ColorBtn key={c.hex} hex={c.hex} active={connector.color === c.hex}
+                    onClick={() => { updateConnector({ color: c.hex }); setConnectorHexInput(c.hex); }}
+                    title={c.label} size={20}
+                  />
+                ))}
+                <input type="text" value={connectorHexInput}
+                  onChange={(e) => {
+                    setConnectorHexInput(e.target.value);
+                    if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) updateConnector({ color: e.target.value });
+                  }}
+                  style={{
+                    width: 70, padding: '3px 5px', fontSize: 11,
+                    background: '#161b22', border: '1px solid #30363d',
+                    borderRadius: 3, color: '#e6edf3', fontFamily: 'monospace',
+                    direction: 'ltr', textAlign: 'left',
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Default banner position ── */}
       <div>
         <label style={LABEL_STYLE}>موضع البانر الافتراضي</label>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -173,12 +236,14 @@ export function AlbumSettingsPanel({ theme, channelProfile, onUpdateTheme }: Alb
 
 // ─── Sub-components ──────────────────────────────────────────
 
-function ColorBtn({ hex, active, onClick, title }: { hex: string; active: boolean; onClick: () => void; title: string }) {
+function ColorBtn({ hex, active, onClick, title, size = 28 }: {
+  hex: string; active: boolean; onClick: () => void; title: string; size?: number;
+}) {
   return (
     <button type="button" onClick={onClick} title={title} style={{
-      width: 28, height: 28, borderRadius: '50%',
+      width: size, height: size, borderRadius: '50%',
       background: hex,
-      border: `3px solid ${active ? '#ef5350' : (hex === '#FFFFFF' || hex === '#F5F5F5' ? '#555' : hex)}`,
+      border: `2px solid ${active ? '#ef5350' : (hex === '#FFFFFF' || hex === '#F5F5F5' ? '#555' : hex)}`,
       cursor: 'pointer', padding: 0, flexShrink: 0,
       boxShadow: active ? '0 0 0 2px rgba(239,83,80,0.3)' : 'none',
     }} />
@@ -194,19 +259,6 @@ function SizeBtn({ label, onClick }: { label: string; onClick: () => void }) {
       cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       {label}
-    </button>
-  );
-}
-
-function ResetBtn({ visible, onClick }: { visible: boolean; onClick: () => void }) {
-  if (!visible) return null;
-  return (
-    <button type="button" onClick={onClick} title="إعادة للافتراضي" style={{
-      fontSize: 10, color: '#8b949e', background: '#21262d',
-      border: '1px solid #30363d', borderRadius: 4, padding: '2px 8px',
-      cursor: 'pointer', fontFamily: 'var(--brand-font-family)',
-    }}>
-      ↺
     </button>
   );
 }

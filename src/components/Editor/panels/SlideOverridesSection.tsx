@@ -1,6 +1,13 @@
 'use client';
+import { useState } from 'react';
 import type { AlbumTheme, Slide, ChannelProfile } from '@/types/album';
 import { LABEL_STYLE } from './styles';
+
+const TITLE_COLOR_PRESETS = [
+  { label: 'أحمر', hex: '#D32F2F' },
+  { label: 'أزرق', hex: '#1565C0' },
+  { label: 'أسود', hex: '#212121' },
+];
 
 interface SlideOverridesSectionProps {
   slide: Slide;
@@ -16,22 +23,19 @@ export function SlideOverridesSection({
   onUpdateOverride,
 }: SlideOverridesSectionProps) {
   const overrides = slide.themeOverrides ?? {};
-  const palette = channelProfile.colors.palette;
   const headingToken = channelProfile.typography['heading-l'];
   const bodyToken = channelProfile.typography['body-m'];
 
-  // Effective values (what this slide actually shows)
-  const effectivePrimaryColor = overrides.primaryColor ?? albumTheme.primaryColor;
   const effectiveTitleColor = overrides.titleColor ?? albumTheme.titleColor ?? albumTheme.primaryColor;
-  const effectiveBodyColor = overrides.bodyColor ?? albumTheme.bodyColor ?? '#1A1A1A';
   const effectiveTitleSize = overrides.titleFontSize ?? albumTheme.titleFontSize ?? headingToken.fontSize;
   const effectiveBodySize = overrides.bodyFontSize ?? albumTheme.bodyFontSize ?? bodyToken.fontSize;
 
   const hasOverride = (key: keyof AlbumTheme) => overrides[key] !== undefined;
-
   const resetKey = (key: keyof AlbumTheme) => {
     onUpdateOverride(o => { const next = { ...o }; delete next[key]; return next; });
   };
+
+  const [hexInput, setHexInput] = useState(effectiveTitleColor);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -39,78 +43,33 @@ export function SlideOverridesSection({
         تخصيص هذه الشريحة
       </label>
 
-      {/* Primary color override */}
-      <OverrideRow
-        label="اللون الرئيسي"
-        isOverridden={hasOverride('primaryColor')}
-        onReset={() => resetKey('primaryColor')}
-      >
-        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-          {palette.map(c => (
-            <ColorDot key={c.hex} hex={c.hex}
-              active={effectivePrimaryColor === c.hex}
-              onClick={() => onUpdateOverride(o => ({ ...o, primaryColor: c.hex }))}
-            />
-          ))}
-        </div>
-      </OverrideRow>
-
       {/* Title color override */}
-      <OverrideRow
-        label="لون العنوان"
-        isOverridden={hasOverride('titleColor')}
-        onReset={() => resetKey('titleColor')}
-      >
-        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-          {palette.map(c => (
-            <ColorDot key={c.hex} hex={c.hex}
-              active={effectiveTitleColor === c.hex}
-              onClick={() => onUpdateOverride(o => ({ ...o, titleColor: c.hex }))}
+      <OverrideRow label="لون العنوان" isOverridden={hasOverride('titleColor')} onReset={() => { resetKey('titleColor'); setHexInput(albumTheme.titleColor ?? albumTheme.primaryColor); }}>
+        <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'wrap' }}>
+          {TITLE_COLOR_PRESETS.map(c => (
+            <ColorDot key={c.hex} hex={c.hex} active={effectiveTitleColor === c.hex}
+              onClick={() => { onUpdateOverride(o => ({ ...o, titleColor: c.hex })); setHexInput(c.hex); }}
             />
           ))}
-        </div>
-      </OverrideRow>
-
-      {/* Body color override */}
-      <OverrideRow
-        label="لون النص"
-        isOverridden={hasOverride('bodyColor')}
-        onReset={() => resetKey('bodyColor')}
-      >
-        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-          {[...palette, { hex: '#1A1A1A', label: 'أسود' }].map(c => (
-            <ColorDot key={c.hex} hex={c.hex}
-              active={effectiveBodyColor === c.hex}
-              onClick={() => onUpdateOverride(o => ({ ...o, bodyColor: c.hex }))}
-            />
-          ))}
+          <input type="text" value={hexInput}
+            onChange={(e) => { setHexInput(e.target.value); if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) onUpdateOverride(o => ({ ...o, titleColor: e.target.value })); }}
+            style={{ width: 70, padding: '3px 5px', fontSize: 11, background: '#0d1117', border: '1px solid #30363d', borderRadius: 3, color: '#e6edf3', fontFamily: 'monospace', direction: 'ltr' }}
+          />
         </div>
       </OverrideRow>
 
       {/* Title size override */}
-      <OverrideRow
-        label={`حجم العنوان (${effectiveTitleSize}px)`}
-        isOverridden={hasOverride('titleFontSize')}
-        onReset={() => resetKey('titleFontSize')}
-      >
-        <input type="range" min={20} max={72} step={1}
-          value={effectiveTitleSize}
+      <OverrideRow label={`حجم العنوان (${effectiveTitleSize}px)`} isOverridden={hasOverride('titleFontSize')} onReset={() => resetKey('titleFontSize')}>
+        <input type="range" min={20} max={72} step={1} value={effectiveTitleSize}
           onChange={(e) => onUpdateOverride(o => ({ ...o, titleFontSize: parseInt(e.target.value) }))}
-          style={{ width: '100%', accentColor: '#58a6ff' }}
-        />
+          style={{ width: '100%', accentColor: '#58a6ff' }} />
       </OverrideRow>
 
       {/* Body size override */}
-      <OverrideRow
-        label={`حجم النص (${effectiveBodySize}px)`}
-        isOverridden={hasOverride('bodyFontSize')}
-        onReset={() => resetKey('bodyFontSize')}
-      >
-        <input type="range" min={12} max={48} step={1}
-          value={effectiveBodySize}
+      <OverrideRow label={`حجم النص (${effectiveBodySize}px)`} isOverridden={hasOverride('bodyFontSize')} onReset={() => resetKey('bodyFontSize')}>
+        <input type="range" min={12} max={48} step={1} value={effectiveBodySize}
           onChange={(e) => onUpdateOverride(o => ({ ...o, bodyFontSize: parseInt(e.target.value) }))}
-          style={{ width: '100%', accentColor: '#58a6ff' }}
-        />
+          style={{ width: '100%', accentColor: '#58a6ff' }} />
       </OverrideRow>
     </div>
   );
@@ -124,16 +83,9 @@ function OverrideRow({ label, isOverridden, onReset, children }: {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-        <span style={{ fontSize: 10, color: '#7d8590', fontFamily: 'system-ui', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-          {label}
-        </span>
+        <span style={{ fontSize: 10, color: '#7d8590', fontFamily: 'system-ui', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{label}</span>
         {isOverridden ? (
-          <button type="button" onClick={onReset} style={{
-            fontSize: 9, color: '#58a6ff', background: 'none', border: 'none',
-            cursor: 'pointer', padding: 0, fontFamily: 'var(--brand-font-family)',
-          }}>
-            ↺ افتراضي
-          </button>
+          <button type="button" onClick={onReset} style={{ fontSize: 9, color: '#58a6ff', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'var(--brand-font-family)' }}>↺ افتراضي</button>
         ) : (
           <span style={{ fontSize: 9, color: '#484f58' }}>افتراضي</span>
         )}
@@ -146,10 +98,8 @@ function OverrideRow({ label, isOverridden, onReset, children }: {
 function ColorDot({ hex, active, onClick }: { hex: string; active: boolean; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} style={{
-      width: 22, height: 22, borderRadius: '50%',
-      background: hex,
-      border: `2px solid ${active ? '#58a6ff' : (hex === '#FFFFFF' || hex === '#F5F5F5' ? '#555' : hex)}`,
-      cursor: 'pointer', padding: 0, flexShrink: 0,
+      width: 22, height: 22, borderRadius: '50%', background: hex,
+      border: `2px solid ${active ? '#58a6ff' : hex}`, cursor: 'pointer', padding: 0, flexShrink: 0,
       boxShadow: active ? '0 0 0 2px rgba(88,166,255,0.3)' : 'none',
     }} />
   );

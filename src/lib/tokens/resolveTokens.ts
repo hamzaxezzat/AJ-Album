@@ -1,5 +1,5 @@
 // src/lib/tokens/resolveTokens.ts
-import type { TokenResolutionContext, ResolvedTokens, TypographyProfile } from '@/types/album';
+import type { TokenResolutionContext, ResolvedTokens, TypographyProfile, BulletConnectorConfig } from '@/types/album';
 
 export function resolveTokens(ctx: TokenResolutionContext): ResolvedTokens {
   const { channelProfile, albumTheme, slideOverrides, blockOverrides } = ctx;
@@ -43,6 +43,13 @@ export function resolveTokens(ctx: TokenResolutionContext): ResolvedTokens {
   const titleColor = effectiveTheme.titleColor ?? effectiveTheme.primaryColor ?? accentPrimary;
   const bodyColor = effectiveTheme.bodyColor ?? '#1A1A1A';
 
+  const bulletSize = effectiveTheme.bulletSize ?? 8;
+
+  const defaultConnector: BulletConnectorConfig = { enabled: false, style: 'solid', width: 1, color: '#CCCCCC' };
+  const bulletConnector: BulletConnectorConfig = effectiveTheme.bulletConnector
+    ? { ...defaultConnector, ...effectiveTheme.bulletConnector }
+    : defaultConnector;
+
   return {
     accentPrimary,
     accentSecondary,
@@ -56,6 +63,8 @@ export function resolveTokens(ctx: TokenResolutionContext): ResolvedTokens {
     density,
     bulletStyle,
     bulletDividers,
+    bulletSize,
+    bulletConnector,
     canvasWidth: ctx.canvasConfig.width,
     canvasHeight: ctx.canvasConfig.height,
     primaryFontFamily: channelProfile.primaryFontFamily,

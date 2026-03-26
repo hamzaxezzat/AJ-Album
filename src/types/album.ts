@@ -179,6 +179,15 @@ export interface AlbumTheme {
   bodyFontSize?: number;     // overrides body-m token
   titleColor?: string;       // defaults to primaryColor
   bodyColor?: string;        // defaults to '#212121'
+  bulletSize?: number;       // px, default 8
+  bulletConnector?: BulletConnectorConfig;
+}
+
+export interface BulletConnectorConfig {
+  enabled: boolean;
+  style: 'solid' | 'dashed' | 'dotted';
+  width: number;    // px
+  color: string;    // hex
 }
 
 export interface AlbumMetadata {
@@ -578,6 +587,8 @@ export interface ResolvedTokens {
   density: Density;
   bulletStyle: BulletStyle;
   bulletDividers: boolean;
+  bulletSize: number;
+  bulletConnector: BulletConnectorConfig;
   // Canvas
   canvasWidth: number;
   canvasHeight: number;

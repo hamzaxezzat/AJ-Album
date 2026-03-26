@@ -198,30 +198,75 @@ export function BlockRenderer({ block, tokens }: BlockRendererProps) {
 
     case 'bullet_list': {
       const typo = typoStyle(block.typographyTokenRef, tokens.typography);
+      const bSize = tokens.bulletSize;
+      const conn = tokens.bulletConnector;
       return (
-        <ul
-          className={styles.bulletList}
-          style={{
-            ...baseStyle,
-            ...typo,
-            color: tokens.textPrimary,
-            listStyle: 'none',
-            paddingInlineEnd: 0,
-            paddingInlineStart: 0,
-          }}
-        >
-          {block.items.map((item, idx) => (
-            <li
-              key={item.id}
-              className={`${styles.bulletItem} ${
-                block.showDividers && idx > 0 ? styles.bulletDivider : ''
-              }`}
-              style={{ '--bullet-color': block.bulletColor } as React.CSSProperties}
-              data-bullet-style={block.bulletStyle}
-              dangerouslySetInnerHTML={{ __html: richTextToHtml(item.content) }}
-            />
-          ))}
-        </ul>
+        <div style={{ ...baseStyle, position: 'absolute', display: 'flex', direction: 'rtl' }}>
+          {/* Connector line + bullets column */}
+          {conn.enabled && (
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              width: bSize + 8,
+              flexShrink: 0,
+              position: 'relative',
+              marginInlineEnd: 8,
+            }}>
+              {/* Vertical connector line */}
+              <div style={{
+                position: 'absolute',
+                top: bSize / 2,
+                bottom: bSize / 2,
+                width: conn.width,
+                background: conn.style === 'solid' ? conn.color : 'transparent',
+                borderInlineStart: conn.style !== 'solid'
+                  ? `${conn.width}px ${conn.style} ${conn.color}`
+                  : 'none',
+              }} />
+              {/* Bullet dots positioned at each item */}
+              {block.items.map((item) => (
+                <div key={item.id} style={{
+                  width: bSize,
+                  height: bSize,
+                  borderRadius: block.bulletStyle === 'square' ? 2 : '50%',
+                  background: block.bulletColor,
+                  flexShrink: 0,
+                  zIndex: 1,
+                  marginBottom: 'auto',
+                }} />
+              ))}
+            </div>
+          )}
+          {/* Items */}
+          <ul
+            className={styles.bulletList}
+            style={{
+              ...typo,
+              color: tokens.textPrimary,
+              listStyle: 'none',
+              paddingInlineEnd: 0,
+              paddingInlineStart: 0,
+              flex: 1,
+            }}
+          >
+            {block.items.map((item, idx) => (
+              <li
+                key={item.id}
+                className={`${styles.bulletItem} ${
+                  block.showDividers && idx > 0 ? styles.bulletDivider : ''
+                }`}
+                style={{
+                  '--bullet-color': block.bulletColor,
+                  '--bullet-size': `${bSize}px`,
+                } as React.CSSProperties}
+                data-bullet-style={block.bulletStyle}
+                data-hide-bullet={conn.enabled ? 'true' : undefined}
+                dangerouslySetInnerHTML={{ __html: richTextToHtml(item.content) }}
+              />
+            ))}
+          </ul>
+        </div>
       );
     }
 
