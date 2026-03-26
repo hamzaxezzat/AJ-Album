@@ -231,6 +231,14 @@ After AJ Reviewer audit, three gate conditions were fixed:
 - `pnpm test` — 19/19 tests passing (includes canvas config cascade test)
 - MVP-0 gate pending: Arabic kashida validation requires running `pnpm dev` + export service together to compare browser vs Puppeteer PNG output
 
+### SlideRenderer Inline Style Architecture
+`SlideRenderer` does NOT rely on CSS Modules for the root element. All critical layout
+properties (`position`, `overflow`, `width`, `height`, `backgroundColor`, `fontFamily`,
+`direction`) are set via React inline style to guarantee they apply in Next.js App Router.
+CSS vars (`--canvas-width`, `--canvas-height`, etc.) are still set inline so children's
+`calc(var(--canvas-width) * N)` expressions work. The CSS Module file still exists but
+is not applied to the root div.
+
 ### MVP-1 Notes
 - Storage: localStorage (`aj-album-{id}` keys). No database yet.
 - `getSavedAlbums()` in documentStore scans all `aj-album-*` localStorage keys
