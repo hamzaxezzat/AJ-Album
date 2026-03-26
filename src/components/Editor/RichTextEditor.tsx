@@ -36,6 +36,7 @@ export function RichTextEditor({
       TextStyle,
       Color,
     ],
+    immediatelyRender: false,
     content: (value ?? { type: 'doc', content: [{ type: 'paragraph' }] }) as JSONContent,
     editorProps: {
       attributes: {
