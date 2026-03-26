@@ -203,6 +203,7 @@ src/components/Editor/
 src/app/page.tsx                            → DashboardClient
 src/app/album/new/page.tsx                  → NewAlbumWizard
 src/app/album/[id]/page.tsx                 → EditorClient (async params)
+src/app/test-render/page.tsx                Hardcoded demo slide — diagnose renderer without localStorage
 ```
 
 ### Font Correction
@@ -231,5 +232,8 @@ After AJ Reviewer audit, three gate conditions were fixed:
 - Storage: localStorage (`aj-album-{id}` keys). No database yet.
 - `getSavedAlbums()` in documentStore scans all `aj-album-*` localStorage keys
 - Script parser splits on bare digit lines; `suggestArchetype()` uses word count + number pattern heuristics
-- Canvas displayed at `scale(0.533)` in editor (720px display for 1350px canvas)
+- Canvas displayed at `scale(0.5)` in editor (540px display for 1080px canvas, 675px display height)
 - Export button in editor POSTs to export-service at localhost:3001 — must be running separately
+- **Data migration**: `documentStore.loadFromLocalStorage` runs `migrateAlbum()` on every load, fixing old landscape albums (1350×1080 → 1080×1350), missing `typographyTokenRef`, and landscape-era block positions (y>0.5 → correct portrait positions)
+- **Image upload**: compressImage() resizes to max 1080×1350 at JPEG 82% quality before localStorage (~150-400KB per image)
+- **Test page**: `/test-render` renders a hardcoded Arabic demo slide — visit to isolate renderer bugs from localStorage data bugs
