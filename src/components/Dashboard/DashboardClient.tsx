@@ -80,6 +80,21 @@ export function DashboardClient() {
         <div className={styles.sectionHeader}>
           <h1 className={styles.sectionTitle}>ألبوماتي</h1>
           <div className={styles.headerActions}>
+            <Link
+              href="/settings"
+              style={{
+                background: '#21262d', border: '1px solid #30363d', borderRadius: 8,
+                color: '#8b949e', padding: '8px 16px', fontSize: 13, cursor: 'pointer',
+                fontFamily: 'var(--brand-font-family)', transition: 'all 0.15s',
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                textDecoration: 'none',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#30363d'; e.currentTarget.style.color = '#e6edf3'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#21262d'; e.currentTarget.style.color = '#8b949e'; }}
+            >
+              <span style={{ fontSize: 16 }}>&#9881;</span>
+              إعدادات المنصة
+            </Link>
             <button type="button" className={styles.demoBtn} onClick={handleLoadDemo}>
               تحميل النموذج التجريبي
             </button>
@@ -171,24 +186,6 @@ export function DashboardClient() {
           </div>
         )}
 
-        {/* Platform settings link */}
-        <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid #21262d' }}>
-          <Link
-            href="/settings"
-            style={{
-              background: '#21262d', border: '1px solid #30363d', borderRadius: 8,
-              color: '#8b949e', padding: '10px 20px', fontSize: 14, cursor: 'pointer',
-              fontFamily: 'var(--brand-font-family)', transition: 'all 0.15s',
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              textDecoration: 'none',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#30363d'; e.currentTarget.style.color = '#e6edf3'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#21262d'; e.currentTarget.style.color = '#8b949e'; }}
-          >
-            <span style={{ fontSize: 18 }}>&#9881;</span>
-            إعدادات المنصة
-          </Link>
-        </div>
       </main>
     </div>
   );
