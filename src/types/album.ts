@@ -174,6 +174,11 @@ export interface AlbumTheme {
   bulletDividers: boolean;
   typographyTone: 'standard' | 'bold-heavy' | 'light';
   mode: 'production' | 'creative';
+  // Global typography defaults (canvas px) — cascade: album → slide → block
+  titleFontSize?: number;    // overrides heading-l token
+  bodyFontSize?: number;     // overrides body-m token
+  titleColor?: string;       // defaults to primaryColor
+  bodyColor?: string;        // defaults to '#212121'
 }
 
 export interface AlbumMetadata {
@@ -563,6 +568,10 @@ export interface ResolvedTokens {
   background: string;
   textPrimary: string;
   textSecondary: string;
+  /** Title color — cascades: block override > slide titleColor > album titleColor > accentPrimary */
+  titleColor: string;
+  /** Body color — cascades: block override > slide bodyColor > album bodyColor > textPrimary */
+  bodyColor: string;
   // Typography
   typography: TypographyProfile;
   // Layout

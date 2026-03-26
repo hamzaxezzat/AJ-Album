@@ -263,6 +263,83 @@ describe('resolveTokens', () => {
     };
     expect(resolveTokens(ctx).accentSecondary).toBe('#9C27B0');
   });
+
+  // ── Album/Slide font size + color cascade ──
+
+  it('album titleFontSize overrides channel heading-l token', () => {
+    const ctx: TokenResolutionContext = {
+      channelProfile: mockChannelProfile,
+      canvasConfig: defaultCanvas,
+      albumTheme: { ...baseAlbumTheme, titleFontSize: 50 },
+    };
+    expect(resolveTokens(ctx).typography['heading-l'].fontSize).toBe(50);
+  });
+
+  it('album bodyFontSize overrides channel body-m token', () => {
+    const ctx: TokenResolutionContext = {
+      channelProfile: mockChannelProfile,
+      canvasConfig: defaultCanvas,
+      albumTheme: { ...baseAlbumTheme, bodyFontSize: 24 },
+    };
+    expect(resolveTokens(ctx).typography['body-m'].fontSize).toBe(24);
+  });
+
+  it('slide titleFontSize overrides album titleFontSize', () => {
+    const ctx: TokenResolutionContext = {
+      channelProfile: mockChannelProfile,
+      canvasConfig: defaultCanvas,
+      albumTheme: { ...baseAlbumTheme, titleFontSize: 50 },
+      slideOverrides: { titleFontSize: 60 },
+    };
+    expect(resolveTokens(ctx).typography['heading-l'].fontSize).toBe(60);
+  });
+
+  it('titleColor defaults to primaryColor when not set', () => {
+    const ctx: TokenResolutionContext = {
+      channelProfile: mockChannelProfile,
+      canvasConfig: defaultCanvas,
+      albumTheme: { ...baseAlbumTheme, primaryColor: '#D32F2F' },
+    };
+    expect(resolveTokens(ctx).titleColor).toBe('#D32F2F');
+  });
+
+  it('album titleColor overrides primaryColor for title rendering', () => {
+    const ctx: TokenResolutionContext = {
+      channelProfile: mockChannelProfile,
+      canvasConfig: defaultCanvas,
+      albumTheme: { ...baseAlbumTheme, primaryColor: '#D32F2F', titleColor: '#1565C0' },
+    };
+    expect(resolveTokens(ctx).titleColor).toBe('#1565C0');
+  });
+
+  it('slide titleColor overrides album titleColor', () => {
+    const ctx: TokenResolutionContext = {
+      channelProfile: mockChannelProfile,
+      canvasConfig: defaultCanvas,
+      albumTheme: { ...baseAlbumTheme, titleColor: '#1565C0' },
+      slideOverrides: { titleColor: '#FFC107' },
+    };
+    expect(resolveTokens(ctx).titleColor).toBe('#FFC107');
+  });
+
+  it('bodyColor defaults to #1A1A1A when not set', () => {
+    const ctx: TokenResolutionContext = {
+      channelProfile: mockChannelProfile,
+      canvasConfig: defaultCanvas,
+      albumTheme: baseAlbumTheme,
+    };
+    expect(resolveTokens(ctx).bodyColor).toBe('#1A1A1A');
+  });
+
+  it('font size overrides do not mutate original channel typography', () => {
+    const ctx: TokenResolutionContext = {
+      channelProfile: mockChannelProfile,
+      canvasConfig: defaultCanvas,
+      albumTheme: { ...baseAlbumTheme, titleFontSize: 60 },
+    };
+    resolveTokens(ctx);
+    expect(mockChannelProfile.typography['heading-l'].fontSize).toBe(34);
+  });
 });
 
 describe('tokensToCssVars', () => {

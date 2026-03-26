@@ -1,7 +1,7 @@
 'use client';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { Album, Slide, MainTitleBlock, BodyParagraphBlock } from '@/types/album';
+import type { Album, AlbumTheme, Slide, MainTitleBlock, BodyParagraphBlock } from '@/types/album';
 import { storeImage, loadImage } from '@/lib/imageStore';
 
 /**
@@ -51,6 +51,7 @@ function migrateAlbum(album: Album): Album {
 interface DocumentState {
   album: Album | null;
   setAlbum: (album: Album) => void;
+  updateAlbumTheme: (updater: (theme: AlbumTheme) => void) => void;
   updateSlide: (slideId: string, updater: (slide: Slide) => void) => void;
   addSlide: (slide: Slide, afterIndex?: number) => void;
   deleteSlide: (slideId: string) => void;
@@ -69,6 +70,14 @@ export const useDocumentStore = create<DocumentState>()(
     setAlbum: (album) => {
       set((state) => {
         state.album = album;
+      });
+      void get().saveToLocalStorage();
+    },
+
+    updateAlbumTheme: (updater) => {
+      set((state) => {
+        if (!state.album) return;
+        updater(state.album.theme);
       });
       void get().saveToLocalStorage();
     },

@@ -33,6 +33,7 @@ export function EditorClient({ albumId }: { albumId: string }) {
   const album = useDocumentStore((s) => s.album);
   const loadFromLocalStorage = useDocumentStore((s) => s.loadFromLocalStorage);
   const updateSlide = useDocumentStore((s) => s.updateSlide);
+  const updateAlbumTheme = useDocumentStore((s) => s.updateAlbumTheme);
   const addSlide = useDocumentStore((s) => s.addSlide);
   const deleteSlide = useDocumentStore((s) => s.deleteSlide);
   const duplicateSlide = useDocumentStore((s) => s.duplicateSlide);
@@ -118,6 +119,13 @@ export function EditorClient({ albumId }: { albumId: string }) {
   const handleUpdateLogoVariant = useCallback((variant: LogoVariant) => {
     if (!selectedSlide) return;
     updateSlide(selectedSlide.id, (slide) => { slide.logoVariant = variant; });
+  }, [selectedSlide, updateSlide]);
+
+  const handleUpdateSlideOverrides = useCallback((updater: (o: Partial<import('@/types/album').AlbumTheme>) => Partial<import('@/types/album').AlbumTheme>) => {
+    if (!selectedSlide) return;
+    updateSlide(selectedSlide.id, (slide) => {
+      slide.themeOverrides = updater(slide.themeOverrides ?? {});
+    });
   }, [selectedSlide, updateSlide]);
 
   const handleUploadImage = useCallback((dataUrl: string) => {
@@ -355,6 +363,8 @@ export function EditorClient({ albumId }: { albumId: string }) {
           {selectedSlide ? (
             <PropertiesPanel
               slide={selectedSlide}
+              album={album}
+              channelProfile={channelProfile}
               onUpdateTitle={handleUpdateTitle}
               onUpdateBody={handleUpdateBody}
               onUpdateBlockStyle={handleUpdateBlockStyle}
@@ -363,6 +373,8 @@ export function EditorClient({ albumId }: { albumId: string }) {
               onUpdateSource={handleUpdateSource}
               onUploadImage={handleUploadImage}
               onUpdateLogoVariant={handleUpdateLogoVariant}
+              onUpdateAlbumTheme={updateAlbumTheme}
+              onUpdateSlideOverrides={handleUpdateSlideOverrides}
             />
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>

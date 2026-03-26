@@ -141,7 +141,7 @@ export function BlockRenderer({ block, tokens }: BlockRendererProps) {
           style={{
             ...baseStyle,
             ...typoStyle(block.typographyTokenRef, tokens.typography, block.styleOverrides),
-            color: block.styleOverrides?.color ?? tokens.accentPrimary,
+            color: block.styleOverrides?.color ?? tokens.titleColor,
           }}
           dangerouslySetInnerHTML={{ __html: richTextToHtml(block.content) }}
         />
@@ -170,7 +170,7 @@ export function BlockRenderer({ block, tokens }: BlockRendererProps) {
           style={{
             ...baseStyle,
             ...typoStyle(block.typographyTokenRef, tokens.typography, block.styleOverrides),
-            color: block.styleOverrides?.color ?? tokens.textPrimary,
+            color: block.styleOverrides?.color ?? tokens.bodyColor,
             // THE CRITICAL ARABIC KASHIDA PROPERTY (only when not overriding alignment)
             textJustify: (!overrideAlign && block.kashidaEnabled) ? ('kashida' as React.CSSProperties['textJustify']) : 'auto',
             textAlign: overrideAlign ?? (block.kashidaEnabled ? 'justify' : undefined),

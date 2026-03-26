@@ -4,6 +4,9 @@ import type { TokenResolutionContext, ResolvedTokens, TypographyProfile } from '
 export function resolveTokens(ctx: TokenResolutionContext): ResolvedTokens {
   const { channelProfile, albumTheme, slideOverrides, blockOverrides } = ctx;
 
+  // Effective theme: slide overrides win over album defaults
+  const effectiveTheme = { ...albumTheme, ...slideOverrides };
+
   // Color cascade: block overrides > slide overrides > album theme > channel defaults
   const accentPrimary =
     blockOverrides?.color ??
@@ -26,8 +29,19 @@ export function resolveTokens(ctx: TokenResolutionContext): ResolvedTokens {
     slideOverrides?.bulletDividers ??
     albumTheme.bulletDividers;
 
-  // Typography: channel profile defines the tokens, album/slide can adjust weight
-  const typography: TypographyProfile = channelProfile.typography;
+  // Typography: start from channel profile, apply album/slide font size overrides
+  const typography: TypographyProfile = { ...channelProfile.typography };
+
+  if (effectiveTheme.titleFontSize) {
+    typography['heading-l'] = { ...typography['heading-l'], fontSize: effectiveTheme.titleFontSize };
+  }
+  if (effectiveTheme.bodyFontSize) {
+    typography['body-m'] = { ...typography['body-m'], fontSize: effectiveTheme.bodyFontSize };
+  }
+
+  // Title/body color cascade: slide > album > defaults
+  const titleColor = effectiveTheme.titleColor ?? effectiveTheme.primaryColor ?? accentPrimary;
+  const bodyColor = effectiveTheme.bodyColor ?? '#1A1A1A';
 
   return {
     accentPrimary,
@@ -36,6 +50,8 @@ export function resolveTokens(ctx: TokenResolutionContext): ResolvedTokens {
     background: '#FFFFFF',
     textPrimary: '#1A1A1A',
     textSecondary: '#4A4A4A',
+    titleColor,
+    bodyColor,
     typography,
     density,
     bulletStyle,
@@ -55,6 +71,8 @@ export function tokensToCssVars(tokens: ResolvedTokens): Record<string, string> 
     '--background': tokens.background,
     '--text-primary': tokens.textPrimary,
     '--text-secondary': tokens.textSecondary,
+    '--title-color': tokens.titleColor,
+    '--body-color': tokens.bodyColor,
     '--canvas-width': `${tokens.canvasWidth}px`,
     '--canvas-height': `${tokens.canvasHeight}px`,
     '--brand-font-family': tokens.primaryFontFamily,
