@@ -181,9 +181,9 @@ config/templates/standard_title_body.json   First slide template (عنوان + �
 export-service/
   package.json                              @aj-album/export-service, ESM
   tsconfig.json
-  src/index.ts                              Express server (ports 3001)
+  src/index.ts                              Express server (port 3001) + CORS + shared browser
   src/types/album-types.ts                  Re-exports from src/types/album.ts
-  src/exporters/PngExporter.ts             Puppeteer PNG export with kashida HTML
+  src/exporters/PngExporter.ts             Puppeteer PNG export — reuses browser instance
   Dockerfile                               node:20-slim + chromium + Noto fonts
 public/fonts/                               6 self-hosted WOFF2 files (downloaded)
   IBMPlexArabic-Regular/SemiBold/Bold.woff2
@@ -247,6 +247,7 @@ config/templates/
 src/app/page.tsx                            → DashboardClient
 src/app/album/new/page.tsx                  → NewAlbumWizard
 src/app/album/[id]/page.tsx                 → EditorClient (async params)
+src/app/api/export/route.ts                 API proxy to export service (eliminates CORS + hardcoded URLs)
 src/app/test-render/page.tsx                Hardcoded demo slide — diagnose renderer without localStorage
 ```
 
@@ -293,7 +294,11 @@ is not applied to the root div.
 - `getSavedAlbums()` in documentStore scans all `aj-album-*` localStorage keys
 - Script parser splits on bare digit lines (numbered format) or blank lines (paragraph format). Slide 1 is always `role: 'cover'`. `suggestArchetype()` detects bullet markers (•/-/●), numbered list markers (1./1)), key:value credential pairs, number+unit patterns, and short-line heuristics — in that priority order. Cover slides always get `highlighted_statement`
 - Canvas displayed via `useCanvasScale` hook (ResizeObserver) — responsive to window size, never hardcoded scale
-- Export button in editor POSTs to export-service at localhost:3001 — must be running separately
+- Export uses `/api/export` Next.js API proxy (no hardcoded localhost in client). Proxy forwards to export service (default `http://localhost:3001`, configurable via `EXPORT_SERVICE_URL` env var). Returns clear error when export service is unavailable
+- Export service must be running separately: `pnpm --filter export-service dev`
+- Export service has CORS headers for development (configurable via `CORS_ORIGIN` env var)
+- PngExporter reuses a single Puppeteer browser instance across requests (graceful shutdown closes it)
+- ZipExporter handles per-slide errors gracefully — partial ZIP is produced if some slides fail
 - **Data migration**: `documentStore.loadFromLocalStorage` runs `migrateAlbum()` on every load, fixing old landscape albums (1350×1080 → 1080×1350), missing `typographyTokenRef`, and landscape-era block positions (y>0.5 → correct portrait positions)
 - **Image upload**: compressImage() resizes to max 1080×1350 at JPEG 82% quality before localStorage (~150-400KB per image). Images stored in IndexedDB (`aj-album-images` DB), localStorage holds `idb://{assetId}` refs. In-memory state always has resolved data URLs.
 - **Image rect**: uploaded images use `rect: { x:0, y:0, width:1, height:0.54 }` — top 54% only, matching reference design

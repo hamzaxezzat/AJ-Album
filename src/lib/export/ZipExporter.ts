@@ -1,15 +1,16 @@
 // src/lib/export/ZipExporter.ts
 // Client-side ZIP exporter that bundles PNGs from the export service.
-// Uses JSZip for bundling. Falls back to sequential download if JSZip is not available.
+// Uses JSZip for bundling. Falls back to a minimal ZIP implementation if JSZip is not available.
 
 import type { Album, Slide, ChannelProfile } from '@/types/album';
 import type { ClientExporter, ExportOptions, ExportProgress, SlideExportResult } from './types';
 
-const DEFAULT_SERVICE_URL = 'http://localhost:3001';
-
 /**
- * ZipExporter calls the Puppeteer export service for each slide,
+ * ZipExporter calls the Next.js API proxy (/api/export) for each slide,
  * then bundles all PNGs into a ZIP file for download.
+ *
+ * The API proxy forwards requests to the Puppeteer export service,
+ * eliminating CORS issues and hardcoded URLs.
  */
 export class ZipExporter implements ClientExporter {
   async exportSlide(
@@ -18,17 +19,40 @@ export class ZipExporter implements ClientExporter {
     channelProfile: ChannelProfile,
     options?: ExportOptions,
   ): Promise<SlideExportResult> {
-    const serviceUrl = options?.serviceUrl ?? DEFAULT_SERVICE_URL;
+    // Use the Next.js API proxy (relative URL) instead of direct localhost access.
+    // The proxy handles service availability checks and returns clear error messages.
+    const serviceUrl = options?.serviceUrl;
+    const url = serviceUrl
+      ? `${serviceUrl}/export/slide/png`
+      : '/api/export';
 
-    const res = await fetch(`${serviceUrl}/export/slide`, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slide, album, channelProfile }),
+      body: JSON.stringify({
+        slide,
+        album,
+        channelProfile,
+        scale: options?.scale ?? 2,
+      }),
     });
 
     if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      throw new Error(`Export failed for slide ${slide.number}: ${res.status} ${text}`);
+      // Try to extract a meaningful error message
+      let errorMessage = `Export failed for slide ${slide.number}: ${res.status}`;
+      try {
+        const errorData = await res.json();
+        if (errorData.error) {
+          errorMessage = errorData.error;
+          if (errorData.details) {
+            errorMessage += ` — ${errorData.details}`;
+          }
+        }
+      } catch {
+        const text = await res.text().catch(() => '');
+        if (text) errorMessage += ` ${text}`;
+      }
+      throw new Error(errorMessage);
     }
 
     const blob = await res.blob();
@@ -52,6 +76,7 @@ export class ZipExporter implements ClientExporter {
     const slides = album.slides;
     const total = slides.length;
     const results: SlideExportResult[] = [];
+    const errors: { slideNumber: number; error: string }[] = [];
 
     // Export slides sequentially to avoid overwhelming the service
     for (let i = 0; i < slides.length; i++) {
@@ -61,16 +86,39 @@ export class ZipExporter implements ClientExporter {
         onProgress({ current: i, total, slideNumber: slide.number });
       }
 
-      const result = await this.exportSlide(slide, album, channelProfile, options);
-      results.push(result);
+      try {
+        const result = await this.exportSlide(slide, album, channelProfile, options);
+        results.push(result);
+      } catch (err) {
+        // Record the error but continue with remaining slides
+        const message = err instanceof Error ? err.message : String(err);
+        errors.push({ slideNumber: slide.number, error: message });
+        console.error(`[ZipExporter] Slide ${slide.number} failed:`, message);
+      }
     }
 
     if (onProgress) {
       onProgress({ current: total, total, slideNumber: slides[slides.length - 1].number });
     }
 
-    // Bundle into ZIP
-    return this.createZip(results, album.title);
+    // If ALL slides failed, throw
+    if (results.length === 0) {
+      const firstError = errors[0]?.error ?? 'Unknown error';
+      throw new Error(`فشل تصدير جميع الشرائح: ${firstError}`);
+    }
+
+    // Bundle successful exports into ZIP
+    const zip = await this.createZip(results, album.title);
+
+    // If some slides failed, log a warning (the caller can check results vs total)
+    if (errors.length > 0) {
+      console.warn(
+        `[ZipExporter] ${errors.length}/${total} slides failed:`,
+        errors.map(e => `Slide ${e.slideNumber}: ${e.error}`).join('; '),
+      );
+    }
+
+    return zip;
   }
 
   /**
@@ -78,7 +126,7 @@ export class ZipExporter implements ClientExporter {
    * Uses the JSZip library if available, otherwise falls back
    * to a minimal ZIP implementation.
    */
-  private async createZip(results: SlideExportResult[], albumTitle: string): Promise<Blob> {
+  private async createZip(results: SlideExportResult[], _albumTitle: string): Promise<Blob> {
     // Try to use JSZip dynamically
     try {
       // @ts-expect-error -- jszip is an optional dependency, not always installed
@@ -91,7 +139,7 @@ export class ZipExporter implements ClientExporter {
 
       return await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
     } catch {
-      // JSZip not installed — use minimal uncompressed ZIP
+      // JSZip not installed -- use minimal uncompressed ZIP
       return this.createMinimalZip(results);
     }
   }

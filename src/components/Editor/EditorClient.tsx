@@ -210,7 +210,7 @@ export function EditorClient({ albumId }: { albumId: string }) {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
           <span>{exportActions.exportError}</span>
-          <button type="button" onClick={() => {}} style={{
+          <button type="button" onClick={exportActions.clearExportError} style={{
             background: 'none', border: 'none', color: '#ef5350', cursor: 'pointer', fontSize: 16,
           }}>
             &#10005;

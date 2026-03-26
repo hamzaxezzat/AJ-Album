@@ -11,10 +11,39 @@
 // so the browser and Puppeteer share exactly the same markup.
 
 import puppeteer from 'puppeteer';
+import type { Browser } from 'puppeteer';
 import type { Slide, Album, ExportContext, ExportArtifact, SlideExporter } from '../types/album-types.js';
 
 export class PngExporter implements SlideExporter {
   readonly format = 'png' as const;
+
+  private browser: Browser | null = null;
+
+  /**
+   * Get or launch the shared browser instance.
+   * Reusing the browser across requests avoids the ~1-2s launch cost per slide.
+   */
+  private async getBrowser(): Promise<Browser> {
+    if (this.browser && this.browser.connected) {
+      return this.browser;
+    }
+    this.browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+    });
+    return this.browser;
+  }
+
+  /**
+   * Close the shared browser instance.
+   * Called during graceful shutdown.
+   */
+  async close(): Promise<void> {
+    if (this.browser) {
+      await this.browser.close();
+      this.browser = null;
+    }
+  }
 
   async exportSlide(
     slide: Slide,
@@ -26,17 +55,14 @@ export class PngExporter implements SlideExporter {
 
     const html = generateSlideHtml(slide, album, ctx);
 
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+    const browser = await this.getBrowser();
+    const page = await browser.newPage();
 
     try {
-      const page = await browser.newPage();
       await page.setViewport({ width, height, deviceScaleFactor: scale });
       await page.setContent(html, { waitUntil: 'networkidle0' });
 
-      // Wait for fonts to load — critical for Arabic kashida
+      // Wait for fonts to load -- critical for Arabic kashida
       await page.evaluate(() => document.fonts.ready);
 
       const buffer = await page.screenshot({
@@ -50,12 +76,12 @@ export class PngExporter implements SlideExporter {
         filename: `slide-${String(slide.number).padStart(2, '0')}.png`,
       };
     } finally {
-      await browser.close();
+      await page.close();
     }
   }
 
   async exportAlbum(_album: Album, _ctx: ExportContext): Promise<ExportArtifact> {
-    // Full album ZIP export is implemented by ZipExporter in MVP-1
+    // Full album ZIP export is implemented by ZipExporter on the client side
     throw new Error('Use ZipExporter for full album export');
   }
 }
@@ -65,8 +91,13 @@ export class PngExporter implements SlideExporter {
 function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): string {
   const { width, height } = ctx.canvasDimensions;
   const accentColor = album.theme.primaryColor;
-  // Font base URL — in production this points to the Next.js app's /fonts/ directory
+  // Font base URL -- in production this points to the Next.js app's /fonts/ directory
   const fontBase = process.env.FONT_BASE_URL ?? 'http://localhost:3000/fonts';
+
+  // Extract image data if present
+  const hasImage = !!(slide.image?.asset?.url);
+  const imageUrl = slide.image?.asset?.url ?? '';
+  const imageRect = slide.image?.rect;
 
   return `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
@@ -75,7 +106,7 @@ function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): stri
   <meta name="viewport" content="width=${width}, height=${height}">
   <style>
     /*
-     * Self-hosted fonts — must be available in this container.
+     * Self-hosted fonts -- must be available in this container.
      * NEVER load from Google Fonts: fonts must work offline in Puppeteer.
      */
     @font-face {
@@ -116,7 +147,7 @@ function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): stri
     }
 
     /*
-     * Canvas dimensions as CSS custom properties — same pattern as the browser renderer.
+     * Canvas dimensions as CSS custom properties -- same pattern as the browser renderer.
      * All positions use calc(var(--canvas-width) * N) to stay dimension-agnostic.
      * This guarantees browser preview and Puppeteer export share identical layout logic.
      */
@@ -145,13 +176,13 @@ function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): stri
       overflow: hidden;
     }
 
-    /* Image zone: top 58% of canvas */
+    /* Image zone */
     .image-zone {
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
-      height: calc(var(--canvas-height) * 0.58);
+      height: ${imageRect ? `calc(var(--canvas-height) * ${imageRect.height})` : 'calc(var(--canvas-height) * 0.54)'};
       background-color: #E0E0E0;
       display: flex;
       align-items: center;
@@ -160,6 +191,12 @@ function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): stri
       font-size: 18px;
       overflow: hidden;
       z-index: 1;
+    }
+
+    .image-zone img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
     /* Title block */
@@ -173,11 +210,11 @@ function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): stri
       font-size: 34px;
       font-weight: 700;
       line-height: 1.3;
-      color: #1A1A1A;
+      color: ${accentColor};
       text-align: right;
       /*
        * text-wrap: balance improves headline composition for Arabic.
-       * Chromium supports this — it is the architectural reason Puppeteer is required.
+       * Chromium supports this -- it is the architectural reason Puppeteer is required.
        */
       text-wrap: balance;
       z-index: 10;
@@ -200,7 +237,7 @@ function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): stri
       /*
        * THE CRITICAL KASHIDA TEST.
        * This property extends Arabic letter connections to fill justified lines.
-       * It is only supported in real Chromium — never in html2canvas, SVG, or Canvas.
+       * It is only supported in real Chromium -- never in html2canvas, SVG, or Canvas.
        * If this property renders correctly in the Puppeteer PNG, MVP-0 is validated.
        */
       text-justify: kashida;
@@ -259,9 +296,9 @@ function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): stri
 </head>
 <body>
   <div class="slide">
-    <div class="image-zone">صورة</div>
-    <div class="title">${escapeHtml(getSlideTitle(slide))}</div>
-    <div class="body">${escapeHtml(getSlideBody(slide))}</div>
+    <div class="image-zone">${hasImage ? `<img src="${escapeHtml(imageUrl)}" alt="" />` : 'صورة'}</div>
+    <div class="title">${renderRichContent(getSlideTitle(slide))}</div>
+    <div class="body">${renderRichContent(getSlideBody(slide))}</div>
     <div class="banner"></div>
     <div class="footer">
       <div class="logo-placeholder">الجزيرة</div>
@@ -274,37 +311,87 @@ function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): stri
 
 // ─── Helpers ─────────────────────────────────────────────────
 
-function getSlideTitle(slide: Slide): string {
+function getSlideTitle(slide: Slide): TextNode | string {
   const titleBlock = slide.blocks.find(b => b.type === 'main_title');
   if (!titleBlock || titleBlock.type !== 'main_title') {
     return 'عنوان الشريحة';
   }
-  return extractPlainText(titleBlock.content as { type: string; content?: unknown[] });
+  return (titleBlock.content as TextNode) ?? 'عنوان الشريحة';
 }
 
-function getSlideBody(slide: Slide): string {
+function getSlideBody(slide: Slide): TextNode | string {
   const bodyBlock = slide.blocks.find(b => b.type === 'body_paragraph');
   if (!bodyBlock || bodyBlock.type !== 'body_paragraph') {
     return 'نص الشريحة الذي يحتوي على معلومات تفصيلية حول الموضوع المطروح للنقاش.';
   }
-  return extractPlainText(bodyBlock.content as { type: string; content?: unknown[] });
+  return (bodyBlock.content as TextNode) ?? '';
 }
 
-type TextNode = { type: string; text?: string; content?: TextNode[] };
+type TextNode = { type: string; text?: string; content?: TextNode[]; marks?: { type: string; attrs?: Record<string, unknown> }[] };
 
-function extractPlainText(content: { type: string; content?: unknown[] } | undefined): string {
-  if (!content || content.type !== 'doc') return '';
-  return extractFromNodes((content.content ?? []) as TextNode[]);
+/**
+ * Render TipTap/ProseMirror JSON content to HTML.
+ * Supports bold, italic, strike, highlight, and paragraph/text nodes.
+ */
+function renderRichContent(content: TextNode | string): string {
+  if (typeof content === 'string') return escapeHtml(content);
+  if (!content || content.type !== 'doc') {
+    return escapeHtml(extractPlainText(content));
+  }
+  return renderNodes(content.content ?? []);
 }
 
-function extractFromNodes(nodes: TextNode[]): string {
-  return nodes
-    .map(node => {
-      if (node.type === 'text') return node.text ?? '';
-      if (node.content) return extractFromNodes(node.content);
-      return '';
-    })
-    .join('');
+function renderNodes(nodes: TextNode[]): string {
+  return nodes.map(node => {
+    if (node.type === 'text') {
+      let html = escapeHtml(node.text ?? '');
+      if (node.marks) {
+        for (const mark of node.marks) {
+          switch (mark.type) {
+            case 'bold':
+              html = `<strong>${html}</strong>`;
+              break;
+            case 'italic':
+              html = `<em>${html}</em>`;
+              break;
+            case 'strike':
+              html = `<s>${html}</s>`;
+              break;
+            case 'highlight':
+              html = `<mark style="background:${escapeHtml(String(mark.attrs?.color ?? '#FFEB3B'))}">${html}</mark>`;
+              break;
+          }
+        }
+      }
+      return html;
+    }
+    if (node.type === 'paragraph') {
+      return `<p>${renderNodes(node.content ?? [])}</p>`;
+    }
+    if (node.type === 'bulletList') {
+      return `<ul>${renderNodes(node.content ?? [])}</ul>`;
+    }
+    if (node.type === 'orderedList') {
+      return `<ol>${renderNodes(node.content ?? [])}</ol>`;
+    }
+    if (node.type === 'listItem') {
+      return `<li>${renderNodes(node.content ?? [])}</li>`;
+    }
+    if (node.type === 'hardBreak') {
+      return '<br>';
+    }
+    if (node.content) {
+      return renderNodes(node.content);
+    }
+    return '';
+  }).join('');
+}
+
+function extractPlainText(content: TextNode | undefined): string {
+  if (!content) return '';
+  if (content.type === 'text') return content.text ?? '';
+  if (content.content) return content.content.map(extractPlainText).join('');
+  return '';
 }
 
 function escapeHtml(text: string): string {
