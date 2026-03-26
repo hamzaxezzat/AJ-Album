@@ -507,7 +507,9 @@ export function SettingsEditor() {
       primaryColor: theme.primaryColor,
       titleColor: theme.titleColor ?? theme.primaryColor,
       titleFontSize: theme.titleFontSize ?? headingToken.fontSize,
+      titleFontWeight: (theme as ExtendedTheme).titleWeight ?? headingToken.fontWeight,
       bodyFontSize: theme.bodyFontSize ?? bodyToken.fontSize,
+      bodyFontWeight: (theme as ExtendedTheme).bodyWeight ?? bodyToken.fontWeight,
       bodyColor: theme.bodyColor ?? COLORS.bodyColor,
     };
     const saved: SavedTheme = {

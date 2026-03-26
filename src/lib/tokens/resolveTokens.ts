@@ -33,11 +33,19 @@ export function resolveTokens(ctx: TokenResolutionContext): ResolvedTokens {
   // Typography: start from channel profile, apply album/slide font size overrides
   const typography: TypographyProfile = { ...channelProfile.typography };
 
-  if (effectiveTheme.titleFontSize) {
-    typography['heading-l'] = { ...typography['heading-l'], fontSize: effectiveTheme.titleFontSize };
+  if (effectiveTheme.titleFontSize || effectiveTheme.titleFontWeight) {
+    typography['heading-l'] = {
+      ...typography['heading-l'],
+      ...(effectiveTheme.titleFontSize ? { fontSize: effectiveTheme.titleFontSize } : {}),
+      ...(effectiveTheme.titleFontWeight ? { fontWeight: effectiveTheme.titleFontWeight } : {}),
+    };
   }
-  if (effectiveTheme.bodyFontSize) {
-    typography['body-m'] = { ...typography['body-m'], fontSize: effectiveTheme.bodyFontSize };
+  if (effectiveTheme.bodyFontSize || effectiveTheme.bodyFontWeight) {
+    typography['body-m'] = {
+      ...typography['body-m'],
+      ...(effectiveTheme.bodyFontSize ? { fontSize: effectiveTheme.bodyFontSize } : {}),
+      ...(effectiveTheme.bodyFontWeight ? { fontWeight: effectiveTheme.bodyFontWeight } : {}),
+    };
   }
 
   // Title/body color cascade: slide > album > defaults

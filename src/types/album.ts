@@ -176,7 +176,9 @@ export interface AlbumTheme {
   mode: 'production' | 'creative';
   // Global typography defaults (canvas px) — cascade: album → slide → block
   titleFontSize?: number;    // overrides heading-l token
+  titleFontWeight?: number;  // overrides heading-l token weight
   bodyFontSize?: number;     // overrides body-m token
+  bodyFontWeight?: number;   // overrides body-m token weight
   titleColor?: string;       // defaults to primaryColor
   bodyColor?: string;        // defaults to '#212121'
   bulletSize?: number;       // px, default 8

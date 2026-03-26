@@ -37,6 +37,14 @@ const LINE_STYLE_OPTIONS: { value: BulletConnectorConfig['style']; label: string
   { value: 'dotted', label: '··· نقاط' },
 ];
 
+const WEIGHT_OPTIONS: { value: number; label: string }[] = [
+  { value: 300, label: 'خفيف' },
+  { value: 400, label: 'عادي' },
+  { value: 600, label: 'متوسط' },
+  { value: 700, label: 'عريض' },
+  { value: 900, label: 'ثقيل' },
+];
+
 const CONNECTOR_COLOR_PRESETS = [
   { label: 'رمادي', hex: '#CCCCCC' },
   { label: 'أحمر', hex: '#D32F2F' },
@@ -49,6 +57,8 @@ export function AlbumSettingsPanel({ theme, channelProfile, onUpdateTheme }: Alb
   const effectiveTitleSize = theme.titleFontSize ?? headingToken.fontSize;
   const effectiveBodySize = theme.bodyFontSize ?? bodyToken.fontSize;
   const effectiveTitleColor = theme.titleColor ?? theme.primaryColor;
+  const effectiveTitleWeight = theme.titleFontWeight ?? headingToken.fontWeight;
+  const effectiveBodyWeight = theme.bodyFontWeight ?? bodyToken.fontWeight;
   const effectiveBulletSize = theme.bulletSize ?? 8;
   const connector = theme.bulletConnector ?? { enabled: false, style: 'solid' as const, width: 1, color: '#CCCCCC' };
 
@@ -70,7 +80,9 @@ export function AlbumSettingsPanel({ theme, channelProfile, onUpdateTheme }: Alb
       if (s.titleColor !== undefined) t.titleColor = s.titleColor as string;
       if (s.bodyColor !== undefined) t.bodyColor = s.bodyColor as string;
       if (s.titleFontSize !== undefined) t.titleFontSize = s.titleFontSize as number;
+      if (s.titleFontWeight !== undefined) t.titleFontWeight = s.titleFontWeight as number;
       if (s.bodyFontSize !== undefined) t.bodyFontSize = s.bodyFontSize as number;
+      if (s.bodyFontWeight !== undefined) t.bodyFontWeight = s.bodyFontWeight as number;
       if (s.bulletStyle !== undefined) t.bulletStyle = s.bulletStyle as BulletStyle;
       if (s.bulletSize !== undefined) t.bulletSize = s.bulletSize as number;
       if (s.bulletDividers !== undefined) t.bulletDividers = s.bulletDividers as boolean;
@@ -160,6 +172,20 @@ export function AlbumSettingsPanel({ theme, channelProfile, onUpdateTheme }: Alb
         </div>
       </div>
 
+      {/* ── Title font weight ── */}
+      <div>
+        <label style={LABEL_STYLE}>وزن العنوان</label>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {WEIGHT_OPTIONS.map(w => (
+            <button key={w.value} type="button"
+              onClick={() => onUpdateTheme(t => { t.titleFontWeight = w.value; })}
+              style={{ ...toggleBtnStyle(effectiveTitleWeight === w.value), flex: 1, padding: '4px 0', fontSize: 11 }}>
+              {w.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* ── Body font size ── */}
       <div>
         <label style={LABEL_STYLE}>حجم النص ({effectiveBodySize}px)</label>
@@ -169,6 +195,20 @@ export function AlbumSettingsPanel({ theme, channelProfile, onUpdateTheme }: Alb
             onChange={(e) => onUpdateTheme(t => { t.bodyFontSize = parseInt(e.target.value); })}
             style={{ flex: 1, accentColor: '#D32F2F' }} />
           <SizeBtn label="+" onClick={() => onUpdateTheme(t => { t.bodyFontSize = Math.min(48, effectiveBodySize + 2); })} />
+        </div>
+      </div>
+
+      {/* ── Body font weight ── */}
+      <div>
+        <label style={LABEL_STYLE}>وزن النص</label>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {WEIGHT_OPTIONS.map(w => (
+            <button key={w.value} type="button"
+              onClick={() => onUpdateTheme(t => { t.bodyFontWeight = w.value; })}
+              style={{ ...toggleBtnStyle(effectiveBodyWeight === w.value), flex: 1, padding: '4px 0', fontSize: 11 }}>
+              {w.label}
+            </button>
+          ))}
         </div>
       </div>
 
