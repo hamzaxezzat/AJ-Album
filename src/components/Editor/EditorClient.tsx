@@ -116,12 +116,13 @@ export function EditorClient({ albumId }: { albumId: string }) {
 
   const toolbarTextAlign = selectedBlockForToolbar?.styleOverrides?.textAlign ?? 'right';
 
+  const KASHIDA_TYPES = new Set(['body_paragraph', 'text_box']);
+
   const toolbarKashida = (() => {
     if (!selectedBlockForToolbar) return false;
-    if ('kashidaEnabled' in selectedBlockForToolbar) {
-      return (selectedBlockForToolbar as { kashidaEnabled?: boolean }).kashidaEnabled !== false;
-    }
-    return false;
+    if (!KASHIDA_TYPES.has(selectedBlockForToolbar.type)) return false;
+    const block = selectedBlockForToolbar as unknown as { kashidaEnabled?: boolean };
+    return block.kashidaEnabled !== false;
   })();
 
   const handleToolbarStyle = useCallback((overrides: Partial<BlockStyleOverride>) => {
@@ -133,11 +134,16 @@ export function EditorClient({ albumId }: { albumId: string }) {
   const handleToggleKashida = useCallback(() => {
     const blockId = useEditorUIStore.getState().selectedBlockId;
     if (!blockId || !selectedSlide) return;
-    const updateSlide = useDocumentStore.getState().updateSlide;
+    const { updateSlide } = useDocumentStore.getState();
     updateSlide(selectedSlide.id, (slide) => {
       const block = slide.blocks.find(b => b.id === blockId);
-      if (block && 'kashidaEnabled' in block) {
-        (block as { kashidaEnabled: boolean }).kashidaEnabled = !(block as { kashidaEnabled: boolean }).kashidaEnabled;
+      if (!block) return;
+      if (block.type === 'body_paragraph') {
+        const b = block as import('@/types/album').BodyParagraphBlock;
+        b.kashidaEnabled = !b.kashidaEnabled;
+      } else if (block.type === 'text_box') {
+        const b = block as import('@/types/album').TextBoxBlock;
+        b.kashidaEnabled = !b.kashidaEnabled;
       }
     });
   }, [selectedSlide]);
