@@ -141,7 +141,9 @@ export function NewAlbumWizard() {
             <div className={styles.slideGrid}>
               {parsed.slides.map(slide => (
                 <div key={slide.number} className={styles.slideCard}>
-                  <div className={styles.slideCardNum}>{slide.number}</div>
+                  <div className={styles.slideCardNum}>
+                    {slide.role === 'cover' ? 'غلاف' : slide.number}
+                  </div>
                   <div className={styles.slideCardBody}>
                     <div className={styles.slideCardTitle}>
                       {slide.title || '(بدون عنوان)'}

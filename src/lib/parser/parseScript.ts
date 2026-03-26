@@ -12,26 +12,26 @@ import type {
  * Parses any Arabic script into slides — no numbering required.
  *
  * Strategy (rule-based, no AI):
- *   1. Split by blank lines → blocks
- *   2. First block = album title (if one line) or slide 1 content
- *   3. Each subsequent block = one slide
- *   4. Within a block: first line = title, remaining lines = body
+ *   1. Detect numbered format (bare digit on its own line) vs paragraph format
+ *   2. Split into slide blocks accordingly
+ *   3. Slide 1 is ALWAYS the cover (role: 'cover')
+ *   4. Within each block: first non-empty line = title, rest = body
+ *   5. Suggest archetype based on content analysis
  *
- * Also handles numbered format (bare digit on its own line) as a fallback.
+ * Numbered format:
+ *   1
+ *   عنوان الغلاف هنا
+ *   وصف مختصر
  *
- * Either format works:
+ *   2
+ *   النشأة والبدايات
+ *   وُلد علي عبد اللهي عام 1959...
  *
- *   FREE FORM (just paste paragraphs):
- *     النشأة والبدايات العسكرية
- *     وُلد علي عبد اللهي عام 1959 في قرية علي آباد...
+ * Paragraph format (split by blank lines):
+ *   علي عبد اللهي
  *
- *     قيادة سلاح البر
- *     تولى منصب قائد سلاح البر في الحرس الثوري...
- *
- *   NUMBERED (also works):
- *     2
- *     النشأة والبدايات
- *     وُلد علي عبد اللهي...
+ *   النشأة والبدايات العسكرية
+ *   وُلد علي عبد اللهي عام 1959...
  */
 export function parseScript(rawText: string): ParsedScript {
   const trimmed = rawText.trim();
@@ -50,8 +50,8 @@ export function parseScript(rawText: string): ParsedScript {
 /**
  * Paragraph-based parsing: split on blank lines.
  * Each non-empty block = one slide.
- * First block is treated as the album title if it's a single short line,
- * otherwise it becomes slide 1.
+ * First block becomes the cover slide (role: 'cover').
+ * The album title is extracted from the cover slide's title.
  */
 function parseParagraphScript(text: string): ParsedScript {
   // Split on one or more blank lines
@@ -62,41 +62,36 @@ function parseParagraphScript(text: string): ParsedScript {
 
   if (blocks.length === 0) return { albumTitle: '', slides: [] };
 
-  let albumTitle = '';
-  const slideBlocks: string[] = [];
+  const slides: ParsedSlide[] = [];
 
-  const firstBlock = blocks[0];
-  const firstBlockLines = firstBlock.split('\n').map(l => l.trim()).filter(Boolean);
-
-  // If the first block is a single line (≤ 80 chars), treat it as the album title
-  if (firstBlockLines.length === 1 && firstBlockLines[0].length <= 80) {
-    albumTitle = firstBlockLines[0];
-    slideBlocks.push(...blocks.slice(1));
-  } else {
-    // Otherwise the first block is also a slide
-    slideBlocks.push(...blocks);
-  }
-
-  const slides: ParsedSlide[] = slideBlocks.map((block, index) => {
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
     const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
     const title = lines[0] ?? '';
     const body = lines.slice(1).join('\n').trim();
+    const slideNumber = i + 1;
+    const isCover = slideNumber === 1;
 
-    return {
-      number: index + 2, // slides start at 2 (1 is cover)
-      role: 'inner',
+    slides.push({
+      number: slideNumber,
+      role: isCover ? 'cover' : 'inner',
       rawText: block,
       title,
       body,
-      contentTypeSuggestion: suggestArchetype(title, body),
-    };
-  });
+      contentTypeSuggestion: isCover ? 'highlighted_statement' : suggestArchetype(title, body),
+    });
+  }
+
+  // Album title comes from the cover slide's title
+  const albumTitle = slides.length > 0 ? slides[0].title : '';
 
   return { albumTitle, slides };
 }
 
 /**
  * Numbered-format parsing: bare digit on its own line = new slide.
+ * Slide number 1 is always the cover. Text before the first number
+ * is treated as album title (pre-header text).
  */
 function parseNumberedScript(text: string): ParsedScript {
   const lines = text.split('\n');
@@ -110,17 +105,19 @@ function parseNumberedScript(text: string): ParsedScript {
     if (nonEmpty.length === 0) return;
 
     if (currentNumber === null) {
+      // Text before the first number => album title (pre-header)
       albumTitle = nonEmpty.join(' ').trim();
     } else {
       const title = nonEmpty[0]?.trim() ?? '';
       const body = nonEmpty.slice(1).join('\n').trim();
+      const isCover = currentNumber === 1;
       slides.push({
         number: currentNumber,
-        role: 'inner',
+        role: isCover ? 'cover' : 'inner',
         rawText: currentLines.join('\n'),
         title,
         body,
-        contentTypeSuggestion: suggestArchetype(title, body),
+        contentTypeSuggestion: isCover ? 'highlighted_statement' : suggestArchetype(title, body),
       });
     }
     currentLines = [];
@@ -136,19 +133,61 @@ function parseNumberedScript(text: string): ParsedScript {
   }
   flush();
 
+  // If no pre-header text was found, derive album title from cover slide
+  if (!albumTitle && slides.length > 0 && slides[0].role === 'cover') {
+    albumTitle = slides[0].title;
+  }
+
   return { albumTitle, slides };
 }
 
-function suggestArchetype(title: string, body: string): SlideArchetypeId {
+/** Bullet marker pattern: •, -, ●, ▪, ▸, ◆, or Arabic dash ـ at line start */
+const BULLET_MARKER = /^[\s]*[•\-●▪▸◆ـ]\s/;
+
+/** Numbered list pattern: 1. or 1) or ١. or ١) at line start */
+const NUMBERED_LIST_MARKER = /^[\s]*[\d٠-٩]+[.)]\s/;
+
+/** Key:value pattern for credentials: "label: value" or "label : value" */
+const KEY_VALUE_PATTERN = /^.{2,30}\s*[:：]\s*.+$/;
+
+export function suggestArchetype(title: string, body: string): SlideArchetypeId {
   const lines = body.split('\n').filter(l => l.trim().length > 0);
   const wordCount = body.split(/\s+/).filter(Boolean).length;
   const hasNumbers = /\d+%|\d+\s*(مليار|مليون|ألف|ميار)/.test(body);
-  const hasBulletHints = lines.length >= 3 && lines.every(l => l.trim().length < 80);
 
+  // Title only, no body => highlighted statement
   if (wordCount === 0 && title.length > 0) return 'highlighted_statement';
+
+  // Check for key:value pairs (credentials/profile) — before word count check
+  // because credential rows can be very short
+  const kvLines = lines.filter(l => KEY_VALUE_PATTERN.test(l.trim()));
+  if (kvLines.length >= 3 && kvLines.length >= lines.length * 0.6) {
+    return 'credentials_profile';
+  }
+
+  // Check for explicit bullet markers (•, -, ●, etc.) — before word count check
+  // because bullet lists can be short
+  const bulletLines = lines.filter(l => BULLET_MARKER.test(l));
+  if (bulletLines.length >= 2 && bulletLines.length >= lines.length * 0.5) {
+    return 'bullet_list';
+  }
+
+  // Check for numbered list markers (1. or 1) etc.)
+  const numberedLines = lines.filter(l => NUMBERED_LIST_MARKER.test(l));
+  if (numberedLines.length >= 2 && numberedLines.length >= lines.length * 0.5) {
+    return 'bullet_list'; // numbered lists use bullet_list archetype
+  }
+
+  // Very short body (< 15 words) => highlighted statement
   if (wordCount < 15) return 'highlighted_statement';
+
+  // Data card: numbers with Arabic units
   if (hasNumbers && wordCount < 60) return 'data_card';
+
+  // Bullet heuristic: 3+ short lines (even without markers)
+  const hasBulletHints = lines.length >= 3 && lines.every(l => l.trim().length < 80);
   if (hasBulletHints) return 'bullet_list';
+
   return 'standard_title_body';
 }
 
