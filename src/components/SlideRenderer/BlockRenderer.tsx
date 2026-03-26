@@ -123,7 +123,7 @@ export function BlockRenderer({ block, tokens }: BlockRendererProps) {
           style={{
             ...baseStyle,
             ...typoStyle(block.typographyTokenRef, tokens.typography),
-            color: block.styleOverrides?.color ?? tokens.textPrimary,
+            color: block.styleOverrides?.color ?? tokens.accentPrimary,
           }}
           dangerouslySetInnerHTML={{ __html: richTextToHtml(block.content) }}
         />

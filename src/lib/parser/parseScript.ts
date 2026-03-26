@@ -175,7 +175,7 @@ export function parsedSlideToSlide(parsed: ParsedSlide, albumTheme: AlbumTheme):
       {
         id: nanoid(),
         type: 'main_title',
-        position: { x: 0.05, y: 0.06, width: 0.90, height: 0.14 },
+        position: { x: 0.05, y: 0.56, width: 0.90, height: 0.12 },
         zIndex: 10,
         visible: true,
         typographyTokenRef: 'heading-l',
@@ -184,7 +184,7 @@ export function parsedSlideToSlide(parsed: ParsedSlide, albumTheme: AlbumTheme):
       {
         id: nanoid(),
         type: 'body_paragraph',
-        position: { x: 0.05, y: 0.22, width: 0.90, height: 0.55 },
+        position: { x: 0.05, y: 0.69, width: 0.90, height: 0.21 },
         zIndex: 10,
         visible: true,
         typographyTokenRef: 'body-m',
@@ -192,9 +192,14 @@ export function parsedSlideToSlide(parsed: ParsedSlide, albumTheme: AlbumTheme):
         content: textToRichText(parsed.body),
       },
     ],
+    image: {
+      rect: { x: 0, y: 0, width: 1, height: 0.54 },
+      objectFit: 'cover',
+      focalPoint: { x: 0.5, y: 0.5 },
+    },
     banner: {
       family: 'classic-main',
-      position: albumTheme.defaultBannerPosition,
+      position: 'none',
       heightNormalized: 0.10,
       backgroundColor: 'accent-primary',
       textColor: 'text-on-accent',

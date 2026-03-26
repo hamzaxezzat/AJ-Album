@@ -53,6 +53,11 @@
     "height": 0.074,
     "logoPosition": "right",
     "showSocialHandles": true,
+    "socialHandles": [
+      { "platform": "facebook", "handle": "aljazeerachannel" },
+      { "platform": "youtube", "handle": "aljazeerachannel" },
+      { "platform": "twitter", "handle": "ajarabic" }
+    ],
     "paginationPosition": "left",
     "backgroundColor": "#FFFFFF",
     "textColor": "#212121"

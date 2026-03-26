@@ -70,6 +70,24 @@ export function SlideRenderer({
       {/* Layer 1: Background image zone (zIndex 1) */}
       {slide.image && <ImageZone config={slide.image} />}
 
+      {/* Channel logo — top-left corner, over the image zone (zIndex 50) */}
+      {channelProfile.logo.compact.url && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={channelProfile.logo.compact.url}
+          alt={channelProfile.name}
+          style={{
+            position: 'absolute',
+            top: `calc(var(--canvas-height) * 0.03)`,
+            left: `calc(var(--canvas-width) * 0.04)`,
+            width: `calc(var(--canvas-width) * 0.13)`,
+            height: 'auto',
+            zIndex: 50,
+            pointerEvents: 'none',
+          }}
+        />
+      )}
+
       {/* Layer 2: Content blocks (each carries its own zIndex) */}
       {sortedBlocks.map(
         block =>
@@ -86,8 +104,6 @@ export function SlideRenderer({
       {/* Layer 4: Footer chrome — always rendered, locked brand element */}
       <FooterChrome
         channelProfile={channelProfile}
-        source={slide.source}
-        slideNumber={slide.number}
         tokens={tokens}
       />
     </div>

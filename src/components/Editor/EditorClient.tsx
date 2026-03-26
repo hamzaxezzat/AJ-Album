@@ -113,7 +113,7 @@ function makeBlankSlide(number: number): Slide {
       {
         id: `${id}-title`,
         type: 'main_title',
-        position: { x: 0.05, y: 0.06, width: 0.90, height: 0.14 },
+        position: { x: 0.05, y: 0.56, width: 0.90, height: 0.12 },
         zIndex: 10,
         visible: true,
         typographyTokenRef: 'heading-l',
@@ -122,7 +122,7 @@ function makeBlankSlide(number: number): Slide {
       {
         id: `${id}-body`,
         type: 'body_paragraph',
-        position: { x: 0.05, y: 0.22, width: 0.90, height: 0.55 },
+        position: { x: 0.05, y: 0.69, width: 0.90, height: 0.21 },
         zIndex: 10,
         visible: true,
         typographyTokenRef: 'body-m',
@@ -130,7 +130,12 @@ function makeBlankSlide(number: number): Slide {
         content: plainToRichText(''),
       } as BodyParagraphBlock,
     ],
-    banner: { position: 'bottom', heightNormalized: 0.10, backgroundColor: 'accent-primary', textColor: 'text-on-accent', paddingNormalized: 0.04, overlap: 'none', family: 'classic-main' },
+    image: {
+      rect: { x: 0, y: 0, width: 1, height: 0.54 },
+      objectFit: 'cover',
+      focalPoint: { x: 0.5, y: 0.5 },
+    },
+    banner: { family: 'classic-main', position: 'none', heightNormalized: 0.10, backgroundColor: 'accent-primary', textColor: 'text-on-accent', paddingNormalized: 0.04, overlap: 'none' },
     metadata: { createdAt: now, updatedAt: now },
   };
 }

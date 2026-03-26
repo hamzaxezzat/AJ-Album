@@ -15,29 +15,34 @@ function migrateAlbum(album: Album): Album {
     album.canvasDimensions = { width: 1080, height: 1350, presetName: 'editorial-portrait-4:5' };
   }
 
-  // 2. Fix blocks on each slide
   for (const slide of album.slides) {
+    // 2. Migrate blocks to reference layout positions
     for (const block of slide.blocks) {
       if (block.type === 'main_title') {
         const b = block as MainTitleBlock;
-        // Add missing typographyTokenRef
         if (!b.typographyTokenRef) b.typographyTokenRef = 'heading-l';
-        // Fix landscape-era block position (y > 0.5 means it was off-screen in portrait)
-        if (b.position.y > 0.5) {
-          b.position = { x: 0.05, y: 0.06, width: 0.90, height: 0.14 };
-        }
+        // Always migrate to new text-zone positions (below the image)
+        b.position = { x: 0.05, y: 0.56, width: 0.90, height: 0.12 };
       } else if (block.type === 'body_paragraph') {
         const b = block as BodyParagraphBlock;
-        // Add missing typographyTokenRef
         if (!b.typographyTokenRef) b.typographyTokenRef = 'body-m';
-        // Add missing kashidaEnabled
         if (b.kashidaEnabled === undefined) b.kashidaEnabled = true;
-        // Fix landscape-era block position
-        if (b.position.y > 0.5) {
-          b.position = { x: 0.05, y: 0.22, width: 0.90, height: 0.55 };
-        }
+        b.position = { x: 0.05, y: 0.69, width: 0.90, height: 0.21 };
       }
     }
+
+    // 3. Set image zone to top 54% if full-bleed (height ≥ 0.9) or missing
+    if (!slide.image || (slide.image.rect.height >= 0.9)) {
+      slide.image = {
+        rect: { x: 0, y: 0, width: 1, height: 0.54 },
+        objectFit: 'cover',
+        focalPoint: slide.image?.focalPoint ?? { x: 0.5, y: 0.5 },
+        asset: slide.image?.asset,
+      };
+    }
+
+    // 4. Remove banner (reference design uses no banner)
+    if (slide.banner) slide.banner.position = 'none';
   }
 
   return album;

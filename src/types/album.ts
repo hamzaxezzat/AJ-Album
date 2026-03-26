@@ -66,10 +66,16 @@ export interface BannerFamily {
   allowedPositions: BannerPosition[];
 }
 
+export interface SocialHandle {
+  platform: 'facebook' | 'youtube' | 'twitter';
+  handle: string;
+}
+
 export interface FooterDefinition {
   height: number;          // normalized
   logoPosition: 'left' | 'right';
   showSocialHandles: boolean;
+  socialHandles?: SocialHandle[];  // platform handles shown in footer
   paginationPosition: 'left' | 'right' | 'center';
   backgroundColor: string; // token ref
   textColor: string;       // token ref
