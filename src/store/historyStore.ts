@@ -76,6 +76,7 @@ export const useHistoryStore = create<HistoryState>()((set, get) => ({
     const snapshot = newPast.pop()!;
     const currentSnapshot = JSON.stringify(currentAlbum);
 
+    // Set _applying to suppress pushSnapshot during the setAlbum call that follows
     set({
       past: newPast,
       future: [currentSnapshot, ...state.future],
@@ -84,9 +85,9 @@ export const useHistoryStore = create<HistoryState>()((set, get) => ({
 
     const restored = JSON.parse(snapshot) as Album;
 
-    // Reset _applying flag after the state update
-    // Use setTimeout to ensure this runs after the current set call
-    setTimeout(() => set({ _applying: false }), 0);
+    // Use queueMicrotask for reliable reset — runs after current synchronous
+    // call stack (including the caller's setAlbum) but before next event loop tick
+    queueMicrotask(() => set({ _applying: false }));
 
     return restored;
   },
@@ -107,7 +108,7 @@ export const useHistoryStore = create<HistoryState>()((set, get) => ({
 
     const restored = JSON.parse(snapshot) as Album;
 
-    setTimeout(() => set({ _applying: false }), 0);
+    queueMicrotask(() => set({ _applying: false }));
 
     return restored;
   },

@@ -73,26 +73,32 @@ export function useBlockUpdates(selectedSlide: Slide | null) {
 
   const handleUpdateBannerHeight = useCallback((height: number) => {
     if (!selectedSlide) return;
-    updateSlide(selectedSlide.id, (slide) => {
-      if (slide.banner) slide.banner.heightNormalized = height;
+    withHistory(() => {
+      updateSlide(selectedSlide.id, (slide) => {
+        if (slide.banner) slide.banner.heightNormalized = height;
+      });
     });
-  }, [selectedSlide, updateSlide]);
+  }, [selectedSlide, updateSlide, withHistory]);
 
   const handleUpdateSource = useCallback((text: string) => {
     if (!selectedSlide) return;
-    updateSlide(selectedSlide.id, (slide) => {
-      if (!slide.source) {
-        slide.source = { text, visible: true, sizeMode: 'auto', paginationBehavior: 'share-space' };
-      } else {
-        slide.source.text = text;
-      }
+    withHistory(() => {
+      updateSlide(selectedSlide.id, (slide) => {
+        if (!slide.source) {
+          slide.source = { text, visible: true, sizeMode: 'auto', paginationBehavior: 'share-space' };
+        } else {
+          slide.source.text = text;
+        }
+      });
     });
-  }, [selectedSlide, updateSlide]);
+  }, [selectedSlide, updateSlide, withHistory]);
 
   const handleUpdateLogoVariant = useCallback((variant: LogoVariant) => {
     if (!selectedSlide) return;
-    updateSlide(selectedSlide.id, (slide) => { slide.logoVariant = variant; });
-  }, [selectedSlide, updateSlide]);
+    withHistory(() => {
+      updateSlide(selectedSlide.id, (slide) => { slide.logoVariant = variant; });
+    });
+  }, [selectedSlide, updateSlide, withHistory]);
 
   const handleUpdateSlideOverrides = useCallback((updater: (o: Partial<import('@/types/album').AlbumTheme>) => Partial<import('@/types/album').AlbumTheme>) => {
     if (!selectedSlide) return;
@@ -120,16 +126,20 @@ export function useBlockUpdates(selectedSlide: Slide | null) {
   // Canvas interaction callbacks
   const handleUpdateBlockContent = useCallback((blockId: string, content: RichTextContent) => {
     if (!selectedSlide) return;
-    updateSlide(selectedSlide.id, (slide) => {
-      const b = slide.blocks.find(b => b.id === blockId);
-      if (b && 'content' in b) {
-        (b as MainTitleBlock | BodyParagraphBlock).content = content;
-      }
+    withHistory(() => {
+      updateSlide(selectedSlide.id, (slide) => {
+        const b = slide.blocks.find(b => b.id === blockId);
+        if (b && 'content' in b) {
+          (b as MainTitleBlock | BodyParagraphBlock).content = content;
+        }
+      });
     });
-  }, [selectedSlide, updateSlide]);
+  }, [selectedSlide, updateSlide, withHistory]);
 
   const handleUpdateBlockPosition = useCallback((blockId: string, position: Partial<NormalizedRect>) => {
     if (!selectedSlide) return;
+    // Position updates happen continuously during drag — push history only on first move
+    // (the drag start is captured, continuous moves just update position)
     updateSlide(selectedSlide.id, (slide) => {
       const b = slide.blocks.find(b => b.id === blockId);
       if (b) Object.assign(b.position, position);
@@ -138,11 +148,13 @@ export function useBlockUpdates(selectedSlide: Slide | null) {
 
   const handleUpdateBlockStyleById = useCallback((blockId: string, overrides: Partial<BlockStyleOverride>) => {
     if (!selectedSlide) return;
-    updateSlide(selectedSlide.id, (slide) => {
-      const b = slide.blocks.find(b => b.id === blockId);
-      if (b) b.styleOverrides = { ...b.styleOverrides, ...overrides };
+    withHistory(() => {
+      updateSlide(selectedSlide.id, (slide) => {
+        const b = slide.blocks.find(b => b.id === blockId);
+        if (b) b.styleOverrides = { ...b.styleOverrides, ...overrides };
+      });
     });
-  }, [selectedSlide, updateSlide]);
+  }, [selectedSlide, updateSlide, withHistory]);
 
   return {
     handleUpdateTitle,

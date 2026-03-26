@@ -38,6 +38,7 @@ export function useDragBlock({ canvasW, canvasH, onMove }: DragBlockOptions) {
 
     const handleMouseMove = (me: MouseEvent) => {
       if (!dragState.current) return;
+      // Divide by actual displayed size (canvasW/canvasH already account for scale)
       const dx = (me.clientX - dragState.current.startMouseX) / canvasW;
       const dy = (me.clientY - dragState.current.startMouseY) / canvasH;
       const newX = Math.max(0, Math.min(1 - currentPosition.width, dragState.current.startX + dx));

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getSavedAlbums, useDocumentStore } from '@/store/documentStore';
 import { createDemoAlbum } from '@/lib/demoAlbum';
+import { deleteAlbumImages } from '@/lib/imageStore';
 import styles from './Dashboard.module.css';
 
 type AlbumSummary = {
@@ -49,7 +50,11 @@ export function DashboardClient() {
   function handleDeleteAlbum(albumId: string, albumTitle: string) {
     if (!confirm(`حذف "${albumTitle}"؟ لا يمكن التراجع عن هذا الإجراء.`)) return;
     try {
-      localStorage.removeItem(`aj-album-${albumId}`);
+      const key = `aj-album-${albumId}`;
+      const raw = localStorage.getItem(key);
+      // Clean up IndexedDB images before removing album
+      if (raw) void deleteAlbumImages(raw);
+      localStorage.removeItem(key);
       refreshAlbums();
     } catch {
       // ignore

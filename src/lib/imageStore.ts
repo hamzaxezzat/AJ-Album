@@ -49,3 +49,21 @@ export async function deleteImage(assetId: string): Promise<void> {
     req.onerror = () => reject(req.error);
   });
 }
+
+/** Delete all images whose asset IDs match slides in the given album JSON. */
+export async function deleteAlbumImages(albumJson: string): Promise<void> {
+  if (typeof window === 'undefined') return;
+  try {
+    const album = JSON.parse(albumJson);
+    if (!album?.slides) return;
+    for (const slide of album.slides) {
+      const url = slide.image?.asset?.url;
+      const id = slide.image?.asset?.id;
+      if (id && (url?.startsWith('idb://') || url?.startsWith('data:'))) {
+        await deleteImage(id).catch(() => {});
+      }
+    }
+  } catch {
+    // Ignore parse errors from corrupt data
+  }
+}

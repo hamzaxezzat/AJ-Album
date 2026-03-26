@@ -6,6 +6,8 @@ import type {
   BlockStyleOverride, TypographyProfile, NormalizedRect,
 } from '@/types/album';
 import { useEditorUIStore } from '@/store/editorUIStore';
+import { useDocumentStore } from '@/store/documentStore';
+import { useHistoryStore } from '@/store/historyStore';
 import { InlineTextEditor } from './InlineTextEditor';
 import { useDragBlock } from './useDragBlock';
 
@@ -59,6 +61,9 @@ export function CanvasInteractionLayer({
   const startEditing = useEditorUIStore(s => s.startEditingBlock);
   const stopEditing = useEditorUIStore(s => s.stopEditingBlock);
 
+  const album = useDocumentStore(s => s.album);
+  const pushSnapshot = useHistoryStore(s => s.pushSnapshot);
+
   const selectedBlock = slide.blocks.find(b => b.id === selectedBlockId) ?? null;
   const editingBlock = isEditing && selectedBlock && EDITABLE_TYPES.has(selectedBlock.type)
     ? (selectedBlock as ContentBlock & { content: RichTextContent; typographyTokenRef: string })
@@ -93,6 +98,8 @@ export function CanvasInteractionLayer({
   ) => {
     e.preventDefault();
     e.stopPropagation();
+    // Push undo snapshot before resize
+    if (album) pushSnapshot(album);
     const startX = e.clientX;
     const startY = e.clientY;
     const startPos = { ...block.position };
@@ -129,7 +136,7 @@ export function CanvasInteractionLayer({
 
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
-  }, [canvasW, canvasH, canvasScale, onUpdateBlockPosition]);
+  }, [canvasW, canvasH, canvasScale, onUpdateBlockPosition, album, pushSnapshot]);
 
   // ── Content change ──
   const handleContentChange = useCallback((content: RichTextContent) => {
@@ -173,7 +180,7 @@ export function CanvasInteractionLayer({
             }}
             onClick={(e) => { e.stopPropagation(); if (!isSelected) selectBlock(block.id); }}
             onDoubleClick={(e) => { e.stopPropagation(); if (isTextBlock) { selectBlock(block.id); startEditing(); } }}
-            onMouseDown={(e) => { if (isSelected && !isEditing) handleDragStart(e, block.position); }}
+            onMouseDown={(e) => { if (isSelected && !isEditing) { if (album) pushSnapshot(album); handleDragStart(e, block.position); } }}
             onMouseEnter={(e) => { if (!isSelected) (e.currentTarget as HTMLElement).style.outlineColor = 'rgba(33,150,243,0.4)'; }}
             onMouseLeave={(e) => { if (!isSelected) (e.currentTarget as HTMLElement).style.outlineColor = 'transparent'; }}
           >

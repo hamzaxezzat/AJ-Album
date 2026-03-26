@@ -17,6 +17,10 @@ export interface ExportState {
   exportError: string | null;
 }
 
+// Module-level singletons — avoid re-instantiation on every render
+const guardrailEngine = new GuardrailEngine();
+const zipExporter = new ZipExporter();
+
 /**
  * Hook encapsulating export logic (single PNG + ZIP album).
  * Extracted from EditorClient for SOLID single-responsibility.
@@ -31,9 +35,6 @@ export function useExport({ album, selectedSlide, channelProfile }: UseExportOpt
     exportProgress: null,
     exportError: null,
   });
-
-  const guardrailEngine = new GuardrailEngine();
-  const zipExporter = new ZipExporter();
 
   /** Clear the export error message */
   const clearExportError = useCallback(() => {

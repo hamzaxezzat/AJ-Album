@@ -10,39 +10,46 @@ import { storeImage, loadImage } from '@/lib/imageStore';
  * and before typographyTokenRef was added to blocks.
  */
 function migrateAlbum(album: Album): Album {
-  // 1. Fix landscape canvas to portrait
-  if (album.canvasDimensions.width === 1350 && album.canvasDimensions.height === 1080) {
+  const isLandscape = album.canvasDimensions.width === 1350 && album.canvasDimensions.height === 1080;
+
+  // 1. Fix landscape canvas to portrait (one-time migration)
+  if (isLandscape) {
     album.canvasDimensions = { width: 1080, height: 1350, presetName: 'editorial-portrait-4:5' };
   }
 
   for (const slide of album.slides) {
-    // 2. Migrate blocks to reference layout positions
     for (const block of slide.blocks) {
+      // 2. Add missing typographyTokenRef (non-destructive — only adds if missing)
       if (block.type === 'main_title') {
         const b = block as MainTitleBlock;
         if (!b.typographyTokenRef) b.typographyTokenRef = 'heading-l';
-        // Always migrate to new text-zone positions (below the image)
-        b.position = { x: 0.0833, y: 0.607, width: 0.8333, height: 0.09 };
+        // Only reset positions for landscape→portrait migration
+        if (isLandscape) {
+          b.position = { x: 0.0833, y: 0.607, width: 0.8333, height: 0.09 };
+        }
       } else if (block.type === 'body_paragraph') {
         const b = block as BodyParagraphBlock;
         if (!b.typographyTokenRef) b.typographyTokenRef = 'body-m';
         if (b.kashidaEnabled === undefined) b.kashidaEnabled = true;
-        b.position = { x: 0.0833, y: 0.707, width: 0.8333, height: 0.167 };
+        // Only reset positions for landscape→portrait migration
+        if (isLandscape) {
+          b.position = { x: 0.0833, y: 0.707, width: 0.8333, height: 0.167 };
+        }
       }
     }
 
-    // 3. Set image zone to top 54% if full-bleed (height ≥ 0.9) or missing
-    if (!slide.image || (slide.image.rect.height >= 0.9)) {
+    // 3. Fix image zone only during landscape migration or if truly missing
+    if (isLandscape && slide.image && slide.image.rect.height >= 0.9) {
       slide.image = {
         rect: { x: 0, y: 0, width: 1, height: 0.54 },
         objectFit: 'cover',
-        focalPoint: slide.image?.focalPoint ?? { x: 0.5, y: 0.5 },
-        asset: slide.image?.asset,
+        focalPoint: slide.image.focalPoint ?? { x: 0.5, y: 0.5 },
+        asset: slide.image.asset,
       };
     }
 
-    // 4. Remove banner (reference design uses no banner)
-    if (slide.banner) slide.banner.position = 'none';
+    // 4. Remove banner only during landscape migration
+    if (isLandscape && slide.banner) slide.banner.position = 'none';
   }
 
   return album;
@@ -120,9 +127,18 @@ export const useDocumentStore = create<DocumentState>()(
         const src = state.album.slides[idx];
         // Deep clone via JSON round-trip, assign new id
         const clone = JSON.parse(JSON.stringify(src)) as Slide;
-        clone.id = Math.random().toString(36).slice(2);
+        const newId = Math.random().toString(36).slice(2);
+        clone.id = newId;
         clone.metadata.createdAt = new Date().toISOString();
         clone.metadata.updatedAt = new Date().toISOString();
+        // Give each block a new ID to avoid collisions
+        for (const block of clone.blocks) {
+          block.id = Math.random().toString(36).slice(2);
+        }
+        // Give image asset a new ID so IndexedDB entries are independent
+        if (clone.image?.asset) {
+          clone.image.asset.id = newId;
+        }
         state.album.slides.splice(idx + 1, 0, clone);
         state.album.slides.forEach((s, i) => { s.number = i + 1; });
         newSlide = clone;
@@ -137,6 +153,8 @@ export const useDocumentStore = create<DocumentState>()(
         const slides = state.album.slides;
         const [moved] = slides.splice(fromIndex, 1);
         slides.splice(toIndex, 0, moved);
+        // Renumber all slides after reorder
+        slides.forEach((s, i) => { s.number = i + 1; });
       });
       void get().saveToLocalStorage();
     },
