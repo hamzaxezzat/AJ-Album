@@ -20,11 +20,12 @@ function rich(text: string) {
 }
 
 function buildPreviewSlides(theme: AlbumTheme): Slide[] {
+  const ext = theme as ExtendedTheme;
   const mkSlide = (id: string, num: number, title: string, body: string): Slide => ({
     id, number: num, role: 'inner', archetypeId: 'standard_title_body',
     blocks: [
-      { id: `${id}-t`, type: 'main_title', position: { x: LAYOUT.marginX, y: LAYOUT.titleY, width: LAYOUT.contentWidth, height: LAYOUT.titleHeight }, zIndex: 10, visible: true, typographyTokenRef: 'heading-l', content: rich(title) } as MainTitleBlock,
-      { id: `${id}-b`, type: 'body_paragraph', position: { x: LAYOUT.marginX, y: LAYOUT.bodyY, width: LAYOUT.contentWidth, height: LAYOUT.bodyHeight }, zIndex: 10, visible: true, typographyTokenRef: 'body-m', kashidaEnabled: true, content: rich(body) } as BodyParagraphBlock,
+      { id: `${id}-t`, type: 'main_title', position: { x: LAYOUT.marginX, y: LAYOUT.titleY, width: LAYOUT.contentWidth, height: LAYOUT.titleHeight }, zIndex: 10, visible: true, typographyTokenRef: 'heading-l', content: rich(title), styleOverrides: { fontWeight: ext.titleWeight, color: theme.titleColor ?? theme.primaryColor } } as MainTitleBlock,
+      { id: `${id}-b`, type: 'body_paragraph', position: { x: LAYOUT.marginX, y: LAYOUT.bodyY, width: LAYOUT.contentWidth, height: LAYOUT.bodyHeight }, zIndex: 10, visible: true, typographyTokenRef: 'body-m', kashidaEnabled: true, content: rich(body), styleOverrides: { fontWeight: ext.bodyWeight, color: ext.bodyTextColor } } as BodyParagraphBlock,
     ],
     image: { rect: { x: 0, y: 0, width: 1, height: LAYOUT.imageHeight }, objectFit: 'cover', focalPoint: { x: 0.5, y: 0.5 } },
     banner: { family: BANNER.family, position: theme.defaultBannerPosition ?? 'none', heightNormalized: (theme as ExtendedTheme).bannerHeight ?? BANNER.heightNormalized, backgroundColor: 'accent-primary', textColor: 'text-on-accent', paddingNormalized: BANNER.paddingNormalized, overlap: 'none' },
