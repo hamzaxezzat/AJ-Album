@@ -64,6 +64,9 @@ app.post('/export/slide/png', async (req: Request, res: Response) => {
     return;
   }
 
+  console.log('[export] channelProfile.fontFiles:', JSON.stringify((channelProfile as any)?.fontFiles?.length ?? 'MISSING'));
+  console.log('[export] channelProfile.primaryFontFamily:', (channelProfile as any)?.primaryFontFamily ?? 'MISSING');
+
   try {
     const exporter = getExporter();
     const artifact = await exporter.exportSlide(slide, album, {

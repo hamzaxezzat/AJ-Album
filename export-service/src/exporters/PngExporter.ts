@@ -6,7 +6,37 @@
 
 import puppeteer from 'puppeteer';
 import type { Browser } from 'puppeteer';
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
 import type { Slide, Album, ExportContext, ExportArtifact, SlideExporter } from '../types/album-types.js';
+
+/**
+ * Read a font file and return a base64 data URI.
+ * This embeds the font directly in the HTML so Puppeteer doesn't
+ * need to fetch it over HTTP — guarantees the font loads.
+ */
+function fontToDataUri(filePath: string, format: string): string | null {
+  // Try multiple paths: relative to project root, public/fonts, etc.
+  const cleanPath = filePath.replace(/^\//, '');
+  const candidates = [
+    join(process.cwd(), 'public', cleanPath),
+    join(process.cwd(), '..', 'public', cleanPath),
+    join(process.cwd(), cleanPath),
+    // Absolute fallback for monorepo setups
+    join(process.cwd(), 'public', 'fonts', cleanPath.replace(/^fonts\//, '')),
+    join(process.cwd(), '..', 'public', 'fonts', cleanPath.replace(/^fonts\//, '')),
+  ];
+  for (const p of candidates) {
+    if (existsSync(p)) {
+      const buf = readFileSync(p);
+      const mime = format === 'truetype' ? 'font/ttf'
+        : format === 'woff2' ? 'font/woff2'
+        : 'application/octet-stream';
+      return `data:${mime};base64,${buf.toString('base64')}`;
+    }
+  }
+  return null;
+}
 
 export class PngExporter implements SlideExporter {
   readonly format = 'png' as const;
@@ -254,20 +284,25 @@ function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): stri
   // Generate @font-face from channel profile fontFiles (same fonts as the editor)
   const channelProfile = ctx.channelProfile;
   const fontFiles = (channelProfile as any)?.fontFiles as Array<{ family: string; weight: number; url: string; format: string }> ?? [];
-  const primaryFontFamily = (channelProfile as any)?.primaryFontFamily as string ?? "'Al-Jazeera', Cairo, sans-serif";
+  const primaryFontFamily = (channelProfile as any)?.primaryFontFamily as string ?? "'Al-Jazeera', sans-serif";
 
-  // Font URLs in the profile are like "/fonts/AlJazeera-Regular.ttf"
-  // fontBase is like "http://localhost:3000/fonts"
-  // So we strip the "/fonts" prefix from the URL to avoid duplication
+  // Embed fonts as base64 data URIs so Puppeteer doesn't need HTTP access.
+  // Falls back to HTTP URL if file not found on disk.
   const fontFaces = fontFiles.map(f => {
+    const dataUri = fontToDataUri(f.url, f.format);
+    if (dataUri) {
+      return `@font-face { font-family:'${f.family}'; src:url('${dataUri}') format('${f.format}'); font-weight:${f.weight}; font-style:normal; font-display:block; }`;
+    }
     const filePath = f.url.startsWith('/fonts/') ? f.url.slice(6) : f.url.startsWith('/') ? f.url : '/' + f.url;
     return `@font-face { font-family:'${f.family}'; src:url('${fontBase}${filePath}') format('${f.format}'); font-weight:${f.weight}; font-style:normal; font-display:block; }`;
   }).join('\n    ');
 
-  // Fallback: always include Cairo
+  // Cairo fallback — also try data URI
+  const cairoRegular = fontToDataUri('/fonts/Cairo-Regular.woff2', 'woff2');
+  const cairoBold = fontToDataUri('/fonts/Cairo-Bold.woff2', 'woff2');
   const fallbackFonts = `
-    @font-face { font-family:'Cairo'; src:url('${fontBase}/Cairo-Regular.woff2') format('woff2'); font-weight:400; font-display:block; }
-    @font-face { font-family:'Cairo'; src:url('${fontBase}/Cairo-Bold.woff2') format('woff2'); font-weight:700; font-display:block; }`;
+    @font-face { font-family:'Cairo'; src:url('${cairoRegular ?? fontBase + '/Cairo-Regular.woff2'}') format('woff2'); font-weight:400; font-display:block; }
+    @font-face { font-family:'Cairo'; src:url('${cairoBold ?? fontBase + '/Cairo-Bold.woff2'}') format('woff2'); font-weight:700; font-display:block; }`;
 
   return `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
