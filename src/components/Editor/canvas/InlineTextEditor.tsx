@@ -143,7 +143,7 @@ export function InlineTextEditor({
         background: 'rgba(255,255,255,0.95)',
         cursor: 'text',
         boxSizing: 'border-box',
-        padding: 4,
+        padding: 0,
       }}
     >
       <EditorContent editor={editor} />
