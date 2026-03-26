@@ -2,6 +2,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { Album, Slide, MainTitleBlock, BodyParagraphBlock } from '@/types/album';
+import { storeImage, loadImage } from '@/lib/imageStore';
 
 /**
  * Migrate old album data to current schema.
@@ -50,8 +51,8 @@ interface DocumentState {
   deleteSlide: (slideId: string) => void;
   duplicateSlide: (slideId: string) => Slide | null;
   reorderSlides: (fromIndex: number, toIndex: number) => void;
-  saveToLocalStorage: () => void;
-  loadFromLocalStorage: (albumId: string) => boolean;
+  saveToLocalStorage: () => Promise<void>;
+  loadFromLocalStorage: (albumId: string) => Promise<boolean>;
 }
 
 const LS_KEY = (id: string) => `aj-album-${id}`;
@@ -64,7 +65,7 @@ export const useDocumentStore = create<DocumentState>()(
       set((state) => {
         state.album = album;
       });
-      localStorage.setItem(LS_KEY(album.id), JSON.stringify(album));
+      void get().saveToLocalStorage();
     },
 
     updateSlide: (slideId, updater) => {
@@ -73,7 +74,7 @@ export const useDocumentStore = create<DocumentState>()(
         const slide = state.album.slides.find((s) => s.id === slideId);
         if (slide) updater(slide);
       });
-      get().saveToLocalStorage();
+      void get().saveToLocalStorage();
     },
 
     addSlide: (slide, afterIndex) => {
@@ -84,7 +85,7 @@ export const useDocumentStore = create<DocumentState>()(
         // Renumber all slides
         state.album.slides.forEach((s, i) => { s.number = i + 1; });
       });
-      get().saveToLocalStorage();
+      void get().saveToLocalStorage();
     },
 
     deleteSlide: (slideId) => {
@@ -93,7 +94,7 @@ export const useDocumentStore = create<DocumentState>()(
         state.album.slides = state.album.slides.filter(s => s.id !== slideId);
         state.album.slides.forEach((s, i) => { s.number = i + 1; });
       });
-      get().saveToLocalStorage();
+      void get().saveToLocalStorage();
     },
 
     duplicateSlide: (slideId) => {
@@ -112,7 +113,7 @@ export const useDocumentStore = create<DocumentState>()(
         state.album.slides.forEach((s, i) => { s.number = i + 1; });
         newSlide = clone;
       });
-      get().saveToLocalStorage();
+      void get().saveToLocalStorage();
       return newSlide;
     },
 
@@ -123,26 +124,50 @@ export const useDocumentStore = create<DocumentState>()(
         const [moved] = slides.splice(fromIndex, 1);
         slides.splice(toIndex, 0, moved);
       });
-      get().saveToLocalStorage();
+      void get().saveToLocalStorage();
     },
 
-    saveToLocalStorage: () => {
+    saveToLocalStorage: async () => {
       const { album } = get();
       if (!album) return;
-      localStorage.setItem(LS_KEY(album.id), JSON.stringify(album));
+      if (typeof window === 'undefined') return;
+      // Deep copy — never mutate the in-memory Zustand state
+      const albumToSave = JSON.parse(JSON.stringify(album)) as Album;
+      // Strip data URL images → store in IndexedDB, replace with idb:// refs
+      for (const slide of albumToSave.slides) {
+        const url = slide.image?.asset?.url;
+        if (url?.startsWith('data:')) {
+          const assetId = slide.image!.asset!.id;
+          await storeImage(assetId, url);
+          slide.image!.asset!.url = `idb://${assetId}`;
+        }
+      }
+      try {
+        localStorage.setItem(LS_KEY(album.id), JSON.stringify(albumToSave));
+      } catch (e) {
+        console.error('[documentStore] localStorage save failed:', e);
+      }
     },
 
-    loadFromLocalStorage: (albumId) => {
+    loadFromLocalStorage: async (albumId) => {
       if (typeof window === 'undefined') return false;
       const raw = localStorage.getItem(LS_KEY(albumId));
       if (!raw) return false;
       try {
         const album = migrateAlbum(JSON.parse(raw) as Album);
-        // Save migrated version back so the next load is already clean
-        localStorage.setItem(LS_KEY(albumId), JSON.stringify(album));
-        set((state) => {
-          state.album = album;
-        });
+        // Resolve idb:// refs → data URLs so rendering is synchronous
+        // (backwards compat: old albums with data: URLs pass through untouched)
+        for (const slide of album.slides) {
+          const url = slide.image?.asset?.url;
+          if (url?.startsWith('idb://')) {
+            const assetId = url.slice(6);
+            const dataUrl = await loadImage(assetId);
+            if (dataUrl) slide.image!.asset!.url = dataUrl;
+          }
+        }
+        set((state) => { state.album = album; });
+        // Write back: migrates old data: URLs to idb:// refs on first load
+        void get().saveToLocalStorage();
         return true;
       } catch {
         return false;

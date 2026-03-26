@@ -369,9 +369,10 @@ export function EditorClient({ albumId }: { albumId: string }) {
   useEffect(() => {
     const alreadyLoaded = album?.id === albumId;
     if (!alreadyLoaded) {
-      loadFromLocalStorage(albumId);
+      loadFromLocalStorage(albumId).then(() => setLoadAttempted(true));
+    } else {
+      setLoadAttempted(true);
     }
-    setLoadAttempted(true);
   }, [albumId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
