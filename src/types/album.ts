@@ -147,7 +147,7 @@ export interface ChannelProfile {
   typography: TypographyProfile;
   /** @font-face entries — layout.tsx reads these to inject CSS dynamically. */
   fontFiles: FontFileEntry[];
-  /** Full CSS font-family stack, e.g. "'Al-Jazeera', 'IBM Plex Arabic', sans-serif". */
+  /** Full CSS font-family stack, e.g. "'Al-Jazeera', Cairo, sans-serif". */
   primaryFontFamily: string;
   availableArchetypes: string[];
   defaultDensity: Density;

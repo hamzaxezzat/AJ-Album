@@ -45,7 +45,7 @@ export function ImageZone({ config }: ImageZoneProps) {
             justifyContent: 'center',
             color: '#9E9E9E',
             fontSize: 14,
-            fontFamily: "'IBM Plex Arabic', sans-serif",
+            fontFamily: "'Al-Jazeera', Cairo, sans-serif",
           }}
         >
           صورة

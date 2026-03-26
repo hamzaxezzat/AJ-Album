@@ -65,12 +65,12 @@ function nodeToHtml(node: DocNode): string {
               html = `<mark style="background-color:${mark.attrs?.color ?? 'inherit'};color:inherit;padding:0 0.1em">${html}</mark>`;
               break;
             case 'lang': {
-              // Mixed-direction inline run — spec: Latin in IBM Plex Sans, Arabic in IBM Plex Arabic
+              // Mixed-direction inline run
               const dir = mark.attrs?.lang === 'en' ? 'ltr' : 'rtl';
               const font =
                 mark.attrs?.lang === 'en'
-                  ? "'IBM Plex Sans', sans-serif"
-                  : "'IBM Plex Arabic', sans-serif";
+                  ? "'Al-Jazeera', Cairo, sans-serif"
+                  : "'Al-Jazeera', Cairo, sans-serif";
               html = `<span lang="${mark.attrs?.lang ?? ''}" dir="${dir}" style="font-family:${font}">${html}</span>`;
               break;
             }

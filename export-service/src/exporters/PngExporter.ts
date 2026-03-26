@@ -119,7 +119,7 @@ function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): stri
     const fontWeight = (typoToken?.fontWeight as number) ?? 400;
     const lineHeight = (typoToken?.lineHeight as number) ?? 1.6;
     const fontFamily = (typoToken?.fontFamily as string)
-      ?? "'IBM Plex Arabic', Cairo, sans-serif";
+      ?? "'Al-Jazeera', Cairo, sans-serif";
 
     switch (block.type) {
       case 'main_title': {
@@ -254,7 +254,7 @@ function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): stri
   // Generate @font-face from channel profile fontFiles (same fonts as the editor)
   const channelProfile = ctx.channelProfile;
   const fontFiles = (channelProfile as any)?.fontFiles as Array<{ family: string; weight: number; url: string; format: string }> ?? [];
-  const primaryFontFamily = (channelProfile as any)?.primaryFontFamily as string ?? "'IBM Plex Arabic', Cairo, sans-serif";
+  const primaryFontFamily = (channelProfile as any)?.primaryFontFamily as string ?? "'Al-Jazeera', Cairo, sans-serif";
 
   // Font URLs in the profile are like "/fonts/AlJazeera-Regular.ttf"
   // fontBase is like "http://localhost:3000/fonts"
@@ -264,10 +264,8 @@ function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): stri
     return `@font-face { font-family:'${f.family}'; src:url('${fontBase}${filePath}') format('${f.format}'); font-weight:${f.weight}; font-style:normal; font-display:block; }`;
   }).join('\n    ');
 
-  // Fallback: always include IBM Plex Arabic + Cairo
+  // Fallback: always include Cairo
   const fallbackFonts = `
-    @font-face { font-family:'IBM Plex Arabic'; src:url('${fontBase}/IBMPlexArabic-Regular.woff2') format('woff2'); font-weight:400; font-display:block; }
-    @font-face { font-family:'IBM Plex Arabic'; src:url('${fontBase}/IBMPlexArabic-Bold.woff2') format('woff2'); font-weight:700; font-display:block; }
     @font-face { font-family:'Cairo'; src:url('${fontBase}/Cairo-Regular.woff2') format('woff2'); font-weight:400; font-display:block; }
     @font-face { font-family:'Cairo'; src:url('${fontBase}/Cairo-Bold.woff2') format('woff2'); font-weight:700; font-display:block; }`;
 
@@ -293,7 +291,7 @@ function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): stri
     ${blocksHtml}
     ${bannerHtml}
     <div class="footer">
-      <div style="font-family:'IBM Plex Arabic';font-size:14px;color:#888;direction:ltr;">
+      <div style="font-family:'Al-Jazeera',Cairo,sans-serif;font-size:18px;color:#888;direction:ltr;">
         @aljazeerachannel &nbsp; @ajarabic
       </div>
       <div class="dots">${dotsHtml}</div>

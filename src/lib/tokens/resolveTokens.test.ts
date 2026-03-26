@@ -13,11 +13,11 @@ import type {
 const mockTypography: ChannelProfile['typography'] = {
   'heading-xl': { fontFamily: 'Cairo', fontWeight: 700, fontSize: 46, lineHeight: 1.25, letterSpacing: -0.02, textAlign: 'right', direction: 'rtl' },
   'heading-l': { fontFamily: 'Cairo', fontWeight: 700, fontSize: 34, lineHeight: 1.3, letterSpacing: -0.01, textAlign: 'right', direction: 'rtl' },
-  'heading-m': { fontFamily: 'IBM Plex Arabic', fontWeight: 600, fontSize: 26, lineHeight: 1.35, letterSpacing: 0, textAlign: 'right', direction: 'rtl' },
-  'body-m': { fontFamily: 'IBM Plex Arabic', fontWeight: 400, fontSize: 18, lineHeight: 1.7, letterSpacing: 0, textAlign: 'right', direction: 'rtl' },
-  'body-s': { fontFamily: 'IBM Plex Arabic', fontWeight: 400, fontSize: 14, lineHeight: 1.5, letterSpacing: 0, textAlign: 'right', direction: 'rtl' },
+  'heading-m': { fontFamily: 'Al-Jazeera', fontWeight: 600, fontSize: 26, lineHeight: 1.35, letterSpacing: 0, textAlign: 'right', direction: 'rtl' },
+  'body-m': { fontFamily: 'Al-Jazeera', fontWeight: 400, fontSize: 18, lineHeight: 1.7, letterSpacing: 0, textAlign: 'right', direction: 'rtl' },
+  'body-s': { fontFamily: 'Al-Jazeera', fontWeight: 400, fontSize: 14, lineHeight: 1.5, letterSpacing: 0, textAlign: 'right', direction: 'rtl' },
   'stat-display': { fontFamily: 'Cairo', fontWeight: 700, fontSize: 96, lineHeight: 1.0, letterSpacing: -0.03, textAlign: 'center', direction: 'ltr' },
-  'label': { fontFamily: 'IBM Plex Arabic', fontWeight: 400, fontSize: 12, lineHeight: 1.4, letterSpacing: 0.02, textAlign: 'right', direction: 'rtl' },
+  'label': { fontFamily: 'Al-Jazeera', fontWeight: 400, fontSize: 12, lineHeight: 1.4, letterSpacing: 0.02, textAlign: 'right', direction: 'rtl' },
 };
 
 const mockChannelProfile: ChannelProfile = {
@@ -64,7 +64,7 @@ const mockChannelProfile: ChannelProfile = {
     fontTokenRef: 'body-s',
   },
   typography: mockTypography,
-  primaryFontFamily: "'Al-Jazeera', 'IBM Plex Arabic', Cairo, sans-serif",
+  primaryFontFamily: "'Al-Jazeera', Cairo, sans-serif",
   fontFiles: [
     { family: 'Al-Jazeera', weight: 400, url: '/fonts/AlJazeera-Regular.ttf', format: 'truetype' },
   ],

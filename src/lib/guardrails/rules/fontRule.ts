@@ -16,7 +16,7 @@ const ALWAYS_AVAILABLE = new Set([
 
 /**
  * Extract the primary font family name from a CSS font-family stack.
- * e.g. "'Al-Jazeera', 'IBM Plex Arabic', Cairo, sans-serif" -> "Al-Jazeera"
+ * e.g. "'Al-Jazeera', Cairo, sans-serif" -> "Al-Jazeera"
  */
 function extractPrimaryFont(stack: string): string {
   const first = stack.split(',')[0]?.trim() ?? '';
@@ -37,7 +37,7 @@ export const fontRule: GuardrailRule = {
       declaredFonts.add(entry.family);
     }
     // Add well-known self-hosted fonts
-    declaredFonts.add('IBM Plex Arabic');
+    declaredFonts.add('Al-Jazeera');
     declaredFonts.add('Cairo');
 
     // Check each block's typography token
