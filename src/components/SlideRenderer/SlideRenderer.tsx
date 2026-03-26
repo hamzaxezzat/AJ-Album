@@ -11,7 +11,6 @@
 import React from 'react';
 import type { Slide, Album, ChannelProfile } from '@/types/album';
 import { resolveTokens, tokensToCssVars } from '@/lib/tokens/resolveTokens';
-import styles from './SlideRenderer.module.css';
 import { BlockRenderer } from './BlockRenderer';
 import { BannerRenderer } from './BannerRenderer';
 import { FooterChrome } from './FooterChrome';
@@ -45,15 +44,19 @@ export function SlideRenderer({
 
   const cssVars = tokensToCssVars(tokens);
 
+  // Build style: CSS vars first (for children's calc() expressions), then concrete
+  // values last so they can't be overridden by a bad var resolution.
   const style: React.CSSProperties = {
-    // Spread CSS custom properties — TypeScript doesn't know about custom props,
-    // but they are valid CSS and work at runtime.
     ...(cssVars as React.CSSProperties),
-    // Explicit pixel values as fallback: all children are position:absolute so
-    // the container would collapse to 0 height if CSS vars fail to resolve.
+    // Critical layout — all inline so we never depend on CSS Modules loading.
+    position: 'relative',
+    overflow: 'hidden',
     width: tokens.canvasWidth,
     height: tokens.canvasHeight,
     backgroundColor: tokens.background,
+    fontFamily: "'IBM Plex Arabic', Cairo, sans-serif",
+    direction: 'rtl' as const,
+    WebkitFontSmoothing: 'antialiased',
     ...(scale !== 1
       ? { transform: `scale(${scale})`, transformOrigin: 'top left' }
       : {}),
@@ -64,7 +67,7 @@ export function SlideRenderer({
 
   return (
     <div
-      className={`${styles.slideRoot}${className ? ` ${className}` : ''}`}
+      className={className ?? ''}
       style={style}
       dir="rtl"
       lang="ar"

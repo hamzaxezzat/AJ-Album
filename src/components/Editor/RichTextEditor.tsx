@@ -16,6 +16,18 @@ interface RichTextEditorProps {
   minHeight?: number;
 }
 
+/** Extract plain text from a RichTextContent/JSONContent for comparison purposes. */
+function extractText(content: RichTextContent | JSONContent | null | undefined): string {
+  if (!content) return '';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function walk(node: any): string {
+    if (node.type === 'text') return node.text ?? '';
+    if (node.content) return (node.content as any[]).map(walk).join('');
+    return '';
+  }
+  return walk(content);
+}
+
 const PRESET_COLORS = [
   { label: 'أحمر', value: '#D32F2F' },
   { label: 'أبيض', value: '#FFFFFF' },
@@ -64,17 +76,20 @@ export function RichTextEditor({
   });
 
   // Sync external value changes (e.g. switching slides).
+  // We only call setContent when the incoming value's TEXT differs from what
+  // we last emitted via onChange. This prevents the echo loop:
+  //   user types → onChange → updateSlide → value prop changes → setContent → onUpdate → loop
   useEffect(() => {
     if (!editor) return;
-    const incoming = JSON.stringify(value ?? null);
-    const current = JSON.stringify(editor.getJSON());
-    if (incoming !== current) {
-      isProgrammaticUpdate.current = true;
-      editor.commands.setContent(
-        (value ?? { type: 'doc', content: [{ type: 'paragraph' }] }) as JSONContent,
-      );
-      isProgrammaticUpdate.current = false;
-    }
+    // Compare raw text content only (ignore TipTap-added attrs like textAlign:null)
+    const incomingText = extractText(value);
+    const currentText = extractText(editor.getJSON() as RichTextContent);
+    if (incomingText === currentText) return;
+    isProgrammaticUpdate.current = true;
+    editor.commands.setContent(
+      (value ?? { type: 'doc', content: [{ type: 'paragraph' }] }) as JSONContent,
+    );
+    isProgrammaticUpdate.current = false;
   }, [value, editor]);
 
   if (!editor) return null;
