@@ -24,6 +24,12 @@ interface InlineTextEditorProps {
 
 const EMPTY_DOC: JSONContent = { type: 'doc', content: [{ type: 'paragraph' }] };
 
+/** Check if a block uses kashida justification */
+function hasKashida(block: ContentBlock): boolean {
+  if ('kashidaEnabled' in block) return (block as unknown as { kashidaEnabled?: boolean }).kashidaEnabled !== false;
+  return block.type === ('body_paragraph' as string) || block.type === ('text_box' as string);
+}
+
 // ─── Component ───────────────────────────────────────────────
 
 export function InlineTextEditor({
@@ -125,7 +131,9 @@ export function InlineTextEditor({
         fontSize: overrides?.fontSize ?? token.fontSize,
         lineHeight: token.lineHeight,
         letterSpacing: token.letterSpacing !== 0 ? `${token.letterSpacing}em` : undefined,
-        textAlign: overrides?.textAlign ?? token.textAlign,
+        textAlign: overrides?.textAlign
+          ?? (hasKashida(block) ? 'justify' : token.textAlign),
+        textJustify: hasKashida(block) ? ('kashida' as React.CSSProperties['textJustify']) : undefined,
         direction: token.direction,
         color: overrides?.color ?? (block.type === 'main_title' ? '#D32F2F' : '#212121'),
         // Editing chrome
@@ -136,10 +144,6 @@ export function InlineTextEditor({
         cursor: 'text',
         boxSizing: 'border-box',
         padding: 4,
-        // Kashida for body
-        ...(block.type === 'body_paragraph' ? {
-          textJustify: 'kashida' as React.CSSProperties['textJustify'],
-        } : {}),
       }}
     >
       <EditorContent editor={editor} />
