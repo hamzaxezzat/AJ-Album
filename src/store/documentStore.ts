@@ -31,7 +31,7 @@ function migrateAlbum(album: Album): Album {
         if (!b.typographyTokenRef) b.typographyTokenRef = 'heading-l';
         // Only reset positions for landscape→portrait migration
         if (isLandscape) {
-          b.position = { x: 0.0833, y: 0.607, width: 0.8333, height: 0.09 };
+          b.position = { x: 0.0556, y: 0.57, width: 0.8889, height: 0.06 };
         }
       } else if (block.type === 'body_paragraph') {
         const b = block as BodyParagraphBlock;
@@ -39,7 +39,7 @@ function migrateAlbum(album: Album): Album {
         if (b.kashidaEnabled === undefined) b.kashidaEnabled = true;
         // Only reset positions for landscape→portrait migration
         if (isLandscape) {
-          b.position = { x: 0.0833, y: 0.707, width: 0.8333, height: 0.167 };
+          b.position = { x: 0.0556, y: 0.64, width: 0.8889, height: 0.27 };
         }
       }
     }
@@ -47,7 +47,7 @@ function migrateAlbum(album: Album): Album {
     // 3. Fix image zone: landscape migration (full-bleed → 54%) or missing image zone
     if (isLandscape && slide.image && slide.image.rect.height >= 0.9) {
       slide.image = {
-        rect: { x: 0, y: 0, width: 1, height: 0.54 },
+        rect: { x: 0, y: 0, width: 1, height: 0.55 },
         objectFit: 'cover',
         focalPoint: slide.image.focalPoint ?? { x: 0.5, y: 0.5 },
         asset: slide.image.asset,
@@ -55,7 +55,7 @@ function migrateAlbum(album: Album): Album {
     } else if (!slide.image) {
       // Ensure every slide has an image zone (even without an asset)
       slide.image = {
-        rect: { x: 0, y: 0, width: 1, height: 0.54 },
+        rect: { x: 0, y: 0, width: 1, height: 0.55 },
         objectFit: 'cover',
         focalPoint: { x: 0.5, y: 0.5 },
       };

@@ -19,7 +19,7 @@ export function makeBlankSlide(number: number): Slide {
       {
         id: `${id}-title`,
         type: 'main_title',
-        position: { x: 0.0833, y: 0.607, width: 0.8333, height: 0.09 },
+        position: { x: 0.0556, y: 0.57, width: 0.8889, height: 0.06 },
         zIndex: 10,
         visible: true,
         typographyTokenRef: 'heading-l',
@@ -28,7 +28,7 @@ export function makeBlankSlide(number: number): Slide {
       {
         id: `${id}-body`,
         type: 'body_paragraph',
-        position: { x: 0.0833, y: 0.707, width: 0.8333, height: 0.167 },
+        position: { x: 0.0556, y: 0.64, width: 0.8889, height: 0.27 },
         zIndex: 10,
         visible: true,
         typographyTokenRef: 'body-m',
@@ -37,7 +37,7 @@ export function makeBlankSlide(number: number): Slide {
       } as BodyParagraphBlock,
     ],
     image: {
-      rect: { x: 0, y: 0, width: 1, height: 0.54 },
+      rect: { x: 0, y: 0, width: 1, height: 0.55 },
       objectFit: 'cover',
       focalPoint: { x: 0.5, y: 0.5 },
     },

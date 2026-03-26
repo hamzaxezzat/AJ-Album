@@ -79,10 +79,10 @@ describe('makeBlankSlide', () => {
     expect(bodyBlock.kashidaEnabled).toBe(true);
   });
 
-  it('has image zone covering top 54%', () => {
+  it('has image zone covering top 55%', () => {
     const slide = makeBlankSlide(1);
     expect(slide.image).toBeDefined();
-    expect(slide.image!.rect.height).toBe(0.54);
+    expect(slide.image!.rect.height).toBe(0.55);
     expect(slide.image!.rect.width).toBe(1);
   });
 
@@ -111,8 +111,8 @@ describe('makeBlankSlide', () => {
   it('blocks have correct normalized positions', () => {
     const slide = makeBlankSlide(1);
     const titleBlock = slide.blocks.find(b => b.type === 'main_title')!;
-    // Title at y=0.607 (below 54% image zone)
-    expect(titleBlock.position.y).toBeCloseTo(0.607, 3);
-    expect(titleBlock.position.x).toBeCloseTo(0.0833, 3);
+    // Title at y=0.57 (below 55% image zone)
+    expect(titleBlock.position.y).toBeCloseTo(0.57, 3);
+    expect(titleBlock.position.x).toBeCloseTo(0.0556, 3);
   });
 });

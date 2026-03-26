@@ -18,7 +18,7 @@ const DEMO_SLIDE: Slide = {
     {
       id: 'demo-title',
       type: 'main_title',
-      position: { x: 0.05, y: 0.56, width: 0.90, height: 0.12 },
+      position: { x: 0.0556, y: 0.57, width: 0.8889, height: 0.06 },
       zIndex: 10,
       visible: true,
       typographyTokenRef: 'heading-l',
@@ -30,7 +30,7 @@ const DEMO_SLIDE: Slide = {
     {
       id: 'demo-body',
       type: 'body_paragraph',
-      position: { x: 0.05, y: 0.69, width: 0.90, height: 0.21 },
+      position: { x: 0.0556, y: 0.64, width: 0.8889, height: 0.27 },
       zIndex: 10,
       visible: true,
       typographyTokenRef: 'body-m',
@@ -45,7 +45,7 @@ const DEMO_SLIDE: Slide = {
     } as BodyParagraphBlock,
   ],
   image: {
-    rect: { x: 0, y: 0, width: 1, height: 0.54 },
+    rect: { x: 0, y: 0, width: 1, height: 0.55 },
     objectFit: 'cover' as const,
     focalPoint: { x: 0.5, y: 0.5 },
   },

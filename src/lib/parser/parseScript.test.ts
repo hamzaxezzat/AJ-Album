@@ -522,18 +522,18 @@ describe('parsedSlideToSlide', () => {
     const slide = parsedSlideToSlide(parsed.slides[1], baseTheme);
 
     const titleBlock = slide.blocks.find(b => b.type === 'main_title')!;
-    expect(titleBlock.position.x).toBeCloseTo(0.0833, 3);
-    expect(titleBlock.position.y).toBeCloseTo(0.607, 3);
+    expect(titleBlock.position.x).toBeCloseTo(0.0556, 3);
+    expect(titleBlock.position.y).toBeCloseTo(0.57, 3);
 
     const bodyBlock = slide.blocks.find(b => b.type === 'body_paragraph')!;
-    expect(bodyBlock.position.y).toBeCloseTo(0.707, 3);
+    expect(bodyBlock.position.y).toBeCloseTo(0.64, 3);
   });
 
-  it('sets image zone to top 54%', () => {
+  it('sets image zone to top 55%', () => {
     const parsed = parseScript('غلاف\n\nشريحة\nنص');
     const slide = parsedSlideToSlide(parsed.slides[1], baseTheme);
 
-    expect(slide.image!.rect.height).toBe(0.54);
+    expect(slide.image!.rect.height).toBe(0.55);
     expect(slide.image!.rect.y).toBe(0);
     expect(slide.image!.rect.width).toBe(1);
   });

@@ -115,7 +115,7 @@ export function useBlockUpdates(selectedSlide: Slide | null) {
       updateSlide(selectedSlide.id, (slide) => {
         slide.image = {
           asset: { id: slide.id, url: dataUrl, mimeType: 'image/jpeg', width: 1080, height: 1350 },
-          rect: { x: 0, y: 0, width: 1, height: 0.54 },
+          rect: { x: 0, y: 0, width: 1, height: 0.55 },
           objectFit: 'cover',
           focalPoint: { x: 0.5, y: 0.5 },
         };
