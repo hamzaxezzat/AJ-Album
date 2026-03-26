@@ -49,6 +49,11 @@ export function SlideRenderer({
     // Spread CSS custom properties — TypeScript doesn't know about custom props,
     // but they are valid CSS and work at runtime.
     ...(cssVars as React.CSSProperties),
+    // Explicit pixel values as fallback: all children are position:absolute so
+    // the container would collapse to 0 height if CSS vars fail to resolve.
+    width: tokens.canvasWidth,
+    height: tokens.canvasHeight,
+    backgroundColor: tokens.background,
     ...(scale !== 1
       ? { transform: `scale(${scale})`, transformOrigin: 'top left' }
       : {}),

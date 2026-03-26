@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Highlight from '@tiptap/extension-highlight';
@@ -29,6 +29,15 @@ export function RichTextEditor({
   placeholder = 'اكتب هنا...',
   minHeight = 80,
 }: RichTextEditorProps) {
+  // Keep a stable ref to the latest onChange so the TipTap onUpdate callback
+  // (which is created once and never recreated) always calls the current version.
+  const onChangeRef = useRef(onChange);
+  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+
+  // Flag to suppress onUpdate while we're doing a programmatic setContent.
+  // Prevents spurious store updates when switching slides.
+  const isProgrammaticUpdate = useRef(false);
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -48,19 +57,23 @@ export function RichTextEditor({
       },
     },
     onUpdate({ editor }) {
-      onChange(editor.getJSON() as RichTextContent);
+      // Only propagate changes that come from user input, not from setContent calls.
+      if (isProgrammaticUpdate.current) return;
+      onChangeRef.current(editor.getJSON() as RichTextContent);
     },
   });
 
-  // Sync external value changes (e.g. switching slides)
+  // Sync external value changes (e.g. switching slides).
   useEffect(() => {
     if (!editor) return;
     const incoming = JSON.stringify(value ?? null);
     const current = JSON.stringify(editor.getJSON());
     if (incoming !== current) {
+      isProgrammaticUpdate.current = true;
       editor.commands.setContent(
         (value ?? { type: 'doc', content: [{ type: 'paragraph' }] }) as JSONContent,
       );
+      isProgrammaticUpdate.current = false;
     }
   }, [value, editor]);
 
