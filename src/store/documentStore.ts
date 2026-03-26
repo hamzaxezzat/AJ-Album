@@ -1,7 +1,7 @@
 'use client';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { Album, AlbumTheme, Slide, MainTitleBlock, BodyParagraphBlock } from '@/types/album';
+import type { Album, AlbumTheme, Slide, MainTitleBlock, BodyParagraphBlock, ContentBlock } from '@/types/album';
 import { storeImage, loadImage } from '@/lib/imageStore';
 
 /**
@@ -77,6 +77,10 @@ interface DocumentState {
   deleteSlide: (slideId: string) => void;
   duplicateSlide: (slideId: string) => Slide | null;
   reorderSlides: (fromIndex: number, toIndex: number) => void;
+  addBlock: (slideId: string, block: ContentBlock) => void;
+  deleteBlock: (slideId: string, blockId: string) => void;
+  reorderBlocks: (slideId: string, blockIds: string[]) => void;
+  toggleBlockVisibility: (slideId: string, blockId: string) => void;
   saveToLocalStorage: () => Promise<void>;
   loadFromLocalStorage: (albumId: string) => Promise<boolean>;
 }
@@ -168,6 +172,48 @@ export const useDocumentStore = create<DocumentState>()(
         slides.splice(toIndex, 0, moved);
         // Renumber all slides after reorder
         slides.forEach((s, i) => { s.number = i + 1; });
+      });
+      void get().saveToLocalStorage();
+    },
+
+    addBlock: (slideId, block) => {
+      set((state) => {
+        if (!state.album) return;
+        const slide = state.album.slides.find(s => s.id === slideId);
+        if (slide) slide.blocks.push(block);
+      });
+      void get().saveToLocalStorage();
+    },
+
+    deleteBlock: (slideId, blockId) => {
+      set((state) => {
+        if (!state.album) return;
+        const slide = state.album.slides.find(s => s.id === slideId);
+        if (slide) slide.blocks = slide.blocks.filter(b => b.id !== blockId);
+      });
+      void get().saveToLocalStorage();
+    },
+
+    reorderBlocks: (slideId, blockIds) => {
+      set((state) => {
+        if (!state.album) return;
+        const slide = state.album.slides.find(s => s.id === slideId);
+        if (!slide) return;
+        for (const block of slide.blocks) {
+          const idx = blockIds.indexOf(block.id);
+          if (idx !== -1) block.zIndex = idx + 1;
+        }
+      });
+      void get().saveToLocalStorage();
+    },
+
+    toggleBlockVisibility: (slideId, blockId) => {
+      set((state) => {
+        if (!state.album) return;
+        const slide = state.album.slides.find(s => s.id === slideId);
+        if (!slide) return;
+        const block = slide.blocks.find(b => b.id === blockId);
+        if (block) block.visible = !block.visible;
       });
       void get().saveToLocalStorage();
     },

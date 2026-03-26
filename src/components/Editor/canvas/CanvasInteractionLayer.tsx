@@ -26,7 +26,7 @@ interface CanvasInteractionLayerProps {
   onEditorChange: (editor: Editor | null) => void;
 }
 
-const EDITABLE_TYPES = new Set(['main_title', 'body_paragraph', 'subtitle', 'highlighted_phrase']);
+const EDITABLE_TYPES = new Set(['main_title', 'body_paragraph', 'subtitle', 'highlighted_phrase', 'text_box']);
 
 // ─── Resize handle positions ─────────────────────────────────
 

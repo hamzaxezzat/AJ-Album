@@ -8,9 +8,11 @@ import { LayoutSection } from './LayoutSection';
 import { AlbumSettingsPanel } from './AlbumSettingsPanel';
 import { SlideOverridesSection } from './SlideOverridesSection';
 import { GuardrailPanel } from './GuardrailPanel';
+import { LayersPanel } from './LayersPanel';
 
 type LogoVariant = 'auto' | 'dark' | 'white';
-type PanelTab = 'album' | 'slide';
+type AddableBlockType = 'text_box' | 'rectangle' | 'ellipse';
+type PanelTab = 'album' | 'slide' | 'layers';
 
 const ARCHETYPE_LABELS: Record<string, string> = {
   standard_title_body: 'عنوان + نص',
@@ -35,6 +37,10 @@ export interface PropertiesPanelProps {
   onUpdateLogoVariant: (variant: LogoVariant) => void;
   onUpdateAlbumTheme: (updater: (theme: AlbumTheme) => void) => void;
   onUpdateSlideOverrides: (updater: (overrides: Partial<AlbumTheme>) => Partial<AlbumTheme>) => void;
+  onAddBlock: (type: AddableBlockType) => void;
+  onDeleteBlock: (blockId: string) => void;
+  onReorderBlocks: (blockIds: string[]) => void;
+  onToggleVisibility: (blockId: string) => void;
 }
 
 export function PropertiesPanel({
@@ -51,6 +57,10 @@ export function PropertiesPanel({
   onUpdateLogoVariant,
   onUpdateAlbumTheme,
   onUpdateSlideOverrides,
+  onAddBlock,
+  onDeleteBlock,
+  onReorderBlocks,
+  onToggleVisibility,
 }: PropertiesPanelProps) {
   const [tab, setTab] = useState<PanelTab>('slide');
 
@@ -61,6 +71,7 @@ export function PropertiesPanel({
         display: 'flex', borderBottom: '1px solid #21262d', flexShrink: 0,
       }}>
         <TabBtn active={tab === 'slide'} onClick={() => setTab('slide')}>الشريحة</TabBtn>
+        <TabBtn active={tab === 'layers'} onClick={() => setTab('layers')}>الطبقات</TabBtn>
         <TabBtn active={tab === 'album'} onClick={() => setTab('album')}>الألبوم</TabBtn>
       </div>
 
@@ -71,6 +82,14 @@ export function PropertiesPanel({
             theme={album.theme}
             channelProfile={channelProfile}
             onUpdateTheme={onUpdateAlbumTheme}
+          />
+        ) : tab === 'layers' ? (
+          <LayersPanel
+            slide={slide}
+            onAddBlock={onAddBlock}
+            onDeleteBlock={onDeleteBlock}
+            onReorderBlocks={onReorderBlocks}
+            onToggleVisibility={onToggleVisibility}
           />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>

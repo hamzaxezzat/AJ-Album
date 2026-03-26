@@ -630,6 +630,49 @@ export function BlockRenderer({ block, tokens }: BlockRendererProps) {
       );
     }
 
+    case 'rectangle': {
+      const s = block.shape;
+      return (
+        <div style={{
+          ...baseStyle,
+          backgroundColor: s.fillColor,
+          opacity: s.fillOpacity,
+          border: s.strokeWidth > 0 ? `${s.strokeWidth}px solid ${s.strokeColor}` : 'none',
+          borderRadius: s.borderRadius,
+        }} />
+      );
+    }
+
+    case 'ellipse': {
+      const s = block.shape;
+      return (
+        <div style={{
+          ...baseStyle,
+          backgroundColor: s.fillColor,
+          opacity: s.fillOpacity,
+          border: s.strokeWidth > 0 ? `${s.strokeWidth}px solid ${s.strokeColor}` : 'none',
+          borderRadius: '50%',
+        }} />
+      );
+    }
+
+    case 'text_box': {
+      const overrideAlign = block.styleOverrides?.textAlign;
+      return (
+        <div
+          className={styles.bodyBlock}
+          style={{
+            ...baseStyle,
+            ...typoStyle(block.typographyTokenRef, tokens.typography, block.styleOverrides),
+            color: block.styleOverrides?.color ?? tokens.textPrimary,
+            textJustify: (!overrideAlign && block.kashidaEnabled) ? ('kashida' as React.CSSProperties['textJustify']) : 'auto',
+            textAlign: overrideAlign ?? (block.kashidaEnabled ? 'justify' : undefined),
+          }}
+          dangerouslySetInnerHTML={{ __html: richTextToHtml(block.content) }}
+        />
+      );
+    }
+
     default:
       return null;
   }

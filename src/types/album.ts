@@ -445,6 +445,37 @@ export interface ImageZoneBlock extends BaseBlock {
   config: ImageZoneConfig;
 }
 
+// ─── Shape & Free-Position Blocks ────────────────────────────
+
+export interface ShapeStyleConfig {
+  fillColor: string;
+  fillOpacity: number;       // 0.0–1.0
+  strokeColor: string;
+  strokeWidth: number;       // canvas px
+  strokeOpacity: number;     // 0.0–1.0
+  borderRadius: number;      // canvas px (rectangle only)
+}
+
+export interface RectangleBlock extends BaseBlock {
+  type: 'rectangle';
+  label: string;
+  shape: ShapeStyleConfig;
+}
+
+export interface EllipseBlock extends BaseBlock {
+  type: 'ellipse';
+  label: string;
+  shape: ShapeStyleConfig;
+}
+
+export interface TextBoxBlock extends BaseBlock {
+  type: 'text_box';
+  label: string;
+  content: RichTextContent;
+  typographyTokenRef: string;
+  kashidaEnabled: boolean;
+}
+
 export type ContentBlock =
   | MainTitleBlock
   | SubtitleBlock
@@ -463,7 +494,10 @@ export type ContentBlock =
   | InfographicRowBlock
   | IconTextRowBlock
   | FlagLogoTextRowBlock
-  | ImageZoneBlock;
+  | ImageZoneBlock
+  | RectangleBlock
+  | EllipseBlock
+  | TextBoxBlock;
 
 export type ContentBlockType = ContentBlock['type'];
 

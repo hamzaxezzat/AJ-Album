@@ -13,6 +13,7 @@ import { useCanvasScale } from './hooks/useCanvasScale';
 import { useBlockUpdates } from './hooks/useBlockUpdates';
 import { useSlideManagement } from './hooks/useSlideManagement';
 import { useExport } from './hooks/useExport';
+import { useLayerManagement } from './hooks/useLayerManagement';
 import { SlideStrip } from './panels/SlideStrip';
 import { PropertiesPanel } from './panels/PropertiesPanel';
 import { CanvasInteractionLayer } from './canvas/CanvasInteractionLayer';
@@ -68,6 +69,7 @@ export function EditorClient({ albumId }: { albumId: string }) {
   const blockUpdates = useBlockUpdates(selectedSlide);
   const slideManagement = useSlideManagement();
   const exportActions = useExport({ album, selectedSlide, channelProfile });
+  const layerManagement = useLayerManagement(selectedSlide);
 
   // ── Undo / Redo handlers ──
   const handleUndo = useCallback(() => {
@@ -305,6 +307,10 @@ export function EditorClient({ albumId }: { albumId: string }) {
               onUpdateLogoVariant={blockUpdates.handleUpdateLogoVariant}
               onUpdateAlbumTheme={updateAlbumTheme}
               onUpdateSlideOverrides={blockUpdates.handleUpdateSlideOverrides}
+              onAddBlock={layerManagement.handleAddBlock}
+              onDeleteBlock={layerManagement.handleDeleteBlock}
+              onReorderBlocks={layerManagement.handleReorderBlocks}
+              onToggleVisibility={layerManagement.handleToggleVisibility}
             />
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
