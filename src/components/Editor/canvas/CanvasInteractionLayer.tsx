@@ -2,12 +2,11 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { Editor } from '@tiptap/react';
 import type {
-  Slide, Album, ContentBlock, RichTextContent,
+  Slide, ContentBlock, RichTextContent,
   BlockStyleOverride, TypographyProfile, NormalizedRect,
 } from '@/types/album';
 import { useEditorUIStore } from '@/store/editorUIStore';
 import { InlineTextEditor } from './InlineTextEditor';
-import { FloatingToolbar } from './FloatingToolbar';
 import { useDragBlock } from './useDragBlock';
 
 // ─── Types ───────────────────────────────────────────────────
@@ -21,11 +20,25 @@ interface CanvasInteractionLayerProps {
   onUpdateBlockContent: (blockId: string, content: RichTextContent) => void;
   onUpdateBlockPosition: (blockId: string, position: Partial<NormalizedRect>) => void;
   onUpdateBlockStyle: (blockId: string, overrides: Partial<BlockStyleOverride>) => void;
+  /** Expose TipTap editor instance to parent (for the toolbar bar) */
+  onEditorChange: (editor: Editor | null) => void;
 }
 
-// ─── Editable block types ────────────────────────────────────
-
 const EDITABLE_TYPES = new Set(['main_title', 'body_paragraph', 'subtitle', 'highlighted_phrase']);
+
+// ─── Resize handle positions ─────────────────────────────────
+
+type HandlePos = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
+const HANDLES: { pos: HandlePos; cursor: string; x: number; y: number }[] = [
+  { pos: 'nw', cursor: 'nwse-resize', x: 0, y: 0 },
+  { pos: 'ne', cursor: 'nesw-resize', x: 1, y: 0 },
+  { pos: 'sw', cursor: 'nesw-resize', x: 0, y: 1 },
+  { pos: 'se', cursor: 'nwse-resize', x: 1, y: 1 },
+  { pos: 'n',  cursor: 'ns-resize',   x: 0.5, y: 0 },
+  { pos: 's',  cursor: 'ns-resize',   x: 0.5, y: 1 },
+  { pos: 'w',  cursor: 'ew-resize',   x: 0, y: 0.5 },
+  { pos: 'e',  cursor: 'ew-resize',   x: 1, y: 0.5 },
+];
 
 // ─── Component ───────────────────────────────────────────────
 
@@ -38,6 +51,7 @@ export function CanvasInteractionLayer({
   onUpdateBlockContent,
   onUpdateBlockPosition,
   onUpdateBlockStyle,
+  onEditorChange,
 }: CanvasInteractionLayerProps) {
   const selectedBlockId = useEditorUIStore(s => s.selectedBlockId);
   const isEditing = useEditorUIStore(s => s.isEditingBlock);
@@ -45,44 +59,24 @@ export function CanvasInteractionLayer({
   const startEditing = useEditorUIStore(s => s.startEditingBlock);
   const stopEditing = useEditorUIStore(s => s.stopEditingBlock);
 
-  const [activeEditor, setActiveEditor] = useState<Editor | null>(null);
-  const layerRef = useRef<HTMLDivElement>(null);
-  const [toolbarPos, setToolbarPos] = useState<{ top: number; left: number } | null>(null);
-
   const selectedBlock = slide.blocks.find(b => b.id === selectedBlockId) ?? null;
   const editingBlock = isEditing && selectedBlock && EDITABLE_TYPES.has(selectedBlock.type)
     ? (selectedBlock as ContentBlock & { content: RichTextContent; typographyTokenRef: string })
     : null;
 
-  // ── Compute toolbar screen position ──
-  useEffect(() => {
-    if (!editingBlock || !layerRef.current) {
-      setToolbarPos(null);
-      return;
-    }
-    const layerRect = layerRef.current.getBoundingClientRect();
-    const blockLeft = editingBlock.position.x * canvasW * canvasScale;
-    const blockTop = editingBlock.position.y * canvasH * canvasScale;
-    const blockWidth = editingBlock.position.width * canvasW * canvasScale;
+  // ── Expose editor to parent ──
+  const handleEditorReady = useCallback((editor: Editor) => {
+    onEditorChange(editor);
+  }, [onEditorChange]);
 
-    setToolbarPos({
-      top: layerRect.top + blockTop - 48,
-      left: layerRect.left + blockLeft + blockWidth / 2,
-    });
-  }, [editingBlock, canvasW, canvasH, canvasScale]);
-
-  // ── Click on empty canvas → deselect ──
+  // ── Click empty canvas → deselect ──
   const handleLayerClick = useCallback((e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      selectBlock(null);
-    }
+    if (e.target === e.currentTarget) selectBlock(null);
   }, [selectBlock]);
 
-  // ── Drag handler for selected block ──
+  // ── Drag to reposition ──
   const handleBlockMoved = useCallback((position: Partial<NormalizedRect>) => {
-    if (selectedBlockId) {
-      onUpdateBlockPosition(selectedBlockId, position);
-    }
+    if (selectedBlockId) onUpdateBlockPosition(selectedBlockId, position);
   }, [selectedBlockId, onUpdateBlockPosition]);
 
   const { handleMouseDown: handleDragStart } = useDragBlock({
@@ -91,144 +85,132 @@ export function CanvasInteractionLayer({
     onMove: handleBlockMoved,
   });
 
-  // ── Block content change (from inline editor) ──
-  const handleContentChange = useCallback((content: RichTextContent) => {
-    if (editingBlock) {
-      onUpdateBlockContent(editingBlock.id, content);
-    }
-  }, [editingBlock, onUpdateBlockContent]);
+  // ── Resize handler ──
+  const handleResizeStart = useCallback((
+    e: React.MouseEvent,
+    block: ContentBlock,
+    handle: HandlePos,
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startPos = { ...block.position };
+    const scaledW = canvasW * canvasScale;
+    const scaledH = canvasH * canvasScale;
 
-  // ── Block style change (from toolbar) ──
-  const handleStyleChange = useCallback((overrides: Partial<BlockStyleOverride>) => {
-    if (selectedBlockId) {
-      onUpdateBlockStyle(selectedBlockId, overrides);
-    }
-  }, [selectedBlockId, onUpdateBlockStyle]);
+    const onMouseMove = (me: MouseEvent) => {
+      const dx = (me.clientX - startX) / scaledW;
+      const dy = (me.clientY - startY) / scaledH;
+      const next = { ...startPos };
+
+      // Horizontal
+      if (handle.includes('e')) {
+        next.width = Math.max(0.05, startPos.width + dx);
+      } else if (handle.includes('w')) {
+        next.x = startPos.x + dx;
+        next.width = Math.max(0.05, startPos.width - dx);
+      }
+      // Vertical
+      if (handle.includes('s')) {
+        next.height = Math.max(0.03, startPos.height + dy);
+      } else if (handle.includes('n')) {
+        next.y = startPos.y + dy;
+        next.height = Math.max(0.03, startPos.height - dy);
+      }
+
+      onUpdateBlockPosition(block.id, next);
+    };
+
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  }, [canvasW, canvasH, canvasScale, onUpdateBlockPosition]);
+
+  // ── Content change ──
+  const handleContentChange = useCallback((content: RichTextContent) => {
+    if (editingBlock) onUpdateBlockContent(editingBlock.id, content);
+  }, [editingBlock, onUpdateBlockContent]);
 
   // ── Stop editing ──
   const handleStopEditing = useCallback(() => {
     stopEditing();
-    setActiveEditor(null);
-  }, [stopEditing]);
-
-  // ── Resolve current font size for toolbar ──
-  const currentFontSize = (() => {
-    if (!selectedBlock) return 28;
-    const tokenRef = ('typographyTokenRef' in selectedBlock)
-      ? (selectedBlock as { typographyTokenRef: string }).typographyTokenRef
-      : 'body-m';
-    const token = typography[tokenRef as keyof TypographyProfile];
-    return selectedBlock.styleOverrides?.fontSize ?? token?.fontSize ?? 28;
-  })();
-
-  const currentTextAlign = selectedBlock?.styleOverrides?.textAlign ?? 'right';
+    onEditorChange(null);
+  }, [stopEditing, onEditorChange]);
 
   return (
-    <>
-      {/* Interaction layer — same size as canvas, positioned on top */}
-      <div
-        ref={layerRef}
-        onClick={handleLayerClick}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 100,
-          cursor: 'default',
-        }}
-      >
-        {/* Block overlays — clickable selection zones */}
-        {slide.blocks.filter(b => b.visible).map(block => {
-          const isSelected = block.id === selectedBlockId;
-          const isBeingEdited = editingBlock?.id === block.id;
-          const isTextBlock = EDITABLE_TYPES.has(block.type);
+    <div
+      onClick={handleLayerClick}
+      style={{ position: 'absolute', inset: 0, zIndex: 100, cursor: 'default' }}
+    >
+      {/* Block overlays */}
+      {slide.blocks.filter(b => b.visible).map(block => {
+        const isSelected = block.id === selectedBlockId;
+        const isBeingEdited = editingBlock?.id === block.id;
+        const isTextBlock = EDITABLE_TYPES.has(block.type);
+        const bx = block.position.x * canvasW;
+        const by = block.position.y * canvasH;
+        const bw = block.position.width * canvasW;
+        const bh = block.position.height * canvasH;
 
-          return (
-            <div
-              key={block.id}
-              style={{
-                position: 'absolute',
-                left: block.position.x * canvasW,
-                top: block.position.y * canvasH,
-                width: block.position.width * canvasW,
-                height: block.position.height * canvasH,
-                // Selection outline
-                outline: isSelected && !isBeingEdited
-                  ? '2px solid #2196F3'
-                  : '2px solid transparent',
-                outlineOffset: 2,
-                borderRadius: 2,
-                cursor: isSelected && !isBeingEdited
-                  ? 'move'
-                  : isTextBlock ? 'pointer' : 'default',
-                // Hover hint
-                transition: 'outline-color 0.15s',
-                zIndex: isSelected ? 10 : 1,
-                // Hide overlay when inline editing this block (the InlineTextEditor takes over)
-                pointerEvents: isBeingEdited ? 'none' : 'auto',
-                opacity: isBeingEdited ? 0 : 1,
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!isSelected) {
-                  selectBlock(block.id);
-                }
-              }}
-              onDoubleClick={(e) => {
-                e.stopPropagation();
-                if (isTextBlock) {
-                  selectBlock(block.id);
-                  startEditing();
-                }
-              }}
-              onMouseDown={(e) => {
-                if (isSelected && !isEditing) {
-                  handleDragStart(e, block.position);
-                }
-              }}
-              // Hover outline
-              onMouseEnter={(e) => {
-                if (!isSelected) {
-                  (e.currentTarget as HTMLElement).style.outlineColor = 'rgba(33,150,243,0.4)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isSelected) {
-                  (e.currentTarget as HTMLElement).style.outlineColor = 'transparent';
-                }
-              }}
-            />
-          );
-        })}
-
-        {/* Inline text editor — replaces the block visually while editing */}
-        {editingBlock && (
-          <InlineTextEditor
-            block={editingBlock}
-            typography={typography}
-            canvasW={canvasW}
-            canvasH={canvasH}
-            onChange={handleContentChange}
-            onEditorReady={setActiveEditor}
-            onClickOutside={handleStopEditing}
-          />
-        )}
-      </div>
-
-      {/* Floating toolbar — positioned in screen space, outside the zoom container */}
-      {editingBlock && activeEditor && toolbarPos && (
-        <div data-floating-toolbar style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 10000 }}>
-          <div style={{ pointerEvents: 'auto' }}>
-            <FloatingToolbar
-              editor={activeEditor}
-              fontSize={currentFontSize}
-              textAlign={currentTextAlign}
-              onUpdateStyle={handleStyleChange}
-              position={toolbarPos}
-              canvasScale={canvasScale}
-            />
+        return (
+          <div
+            key={block.id}
+            style={{
+              position: 'absolute',
+              left: bx, top: by, width: bw, height: bh,
+              outline: isSelected && !isBeingEdited ? '2px solid #2196F3' : '2px solid transparent',
+              outlineOffset: 2, borderRadius: 2,
+              cursor: isSelected && !isBeingEdited ? 'move' : isTextBlock ? 'pointer' : 'default',
+              transition: 'outline-color 0.15s',
+              zIndex: isSelected ? 10 : 1,
+              pointerEvents: isBeingEdited ? 'none' : 'auto',
+              opacity: isBeingEdited ? 0 : 1,
+            }}
+            onClick={(e) => { e.stopPropagation(); if (!isSelected) selectBlock(block.id); }}
+            onDoubleClick={(e) => { e.stopPropagation(); if (isTextBlock) { selectBlock(block.id); startEditing(); } }}
+            onMouseDown={(e) => { if (isSelected && !isEditing) handleDragStart(e, block.position); }}
+            onMouseEnter={(e) => { if (!isSelected) (e.currentTarget as HTMLElement).style.outlineColor = 'rgba(33,150,243,0.4)'; }}
+            onMouseLeave={(e) => { if (!isSelected) (e.currentTarget as HTMLElement).style.outlineColor = 'transparent'; }}
+          >
+            {/* Resize handles — only when selected and not editing */}
+            {isSelected && !isBeingEdited && HANDLES.map(h => (
+              <div
+                key={h.pos}
+                style={{
+                  position: 'absolute',
+                  left: h.x * bw - 5,
+                  top: h.y * bh - 5,
+                  width: 10, height: 10,
+                  background: '#2196F3',
+                  border: '2px solid #fff',
+                  borderRadius: 2,
+                  cursor: h.cursor,
+                  zIndex: 20,
+                }}
+                onMouseDown={(e) => handleResizeStart(e, block, h.pos)}
+              />
+            ))}
           </div>
-        </div>
+        );
+      })}
+
+      {/* Inline text editor */}
+      {editingBlock && (
+        <InlineTextEditor
+          block={editingBlock}
+          typography={typography}
+          canvasW={canvasW}
+          canvasH={canvasH}
+          onChange={handleContentChange}
+          onEditorReady={handleEditorReady}
+          onClickOutside={handleStopEditing}
+        />
       )}
-    </>
+    </div>
   );
 }

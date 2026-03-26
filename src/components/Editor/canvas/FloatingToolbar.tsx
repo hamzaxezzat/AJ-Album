@@ -5,17 +5,10 @@ import type { BlockStyleOverride } from '@/types/album';
 // ─── Types ───────────────────────────────────────────────────
 
 interface FloatingToolbarProps {
-  editor: Editor;
-  /** Current block font size (from token or override) */
+  editor: Editor | null;
   fontSize: number;
-  /** Current block text alignment */
   textAlign: 'right' | 'left' | 'center';
-  /** Update block-level style overrides */
   onUpdateStyle: (overrides: Partial<BlockStyleOverride>) => void;
-  /** Position in screen space (px from viewport top-left) */
-  position: { top: number; left: number };
-  /** Canvas scale (for sizing the toolbar proportionally) */
-  canvasScale: number;
 }
 
 // ─── Color presets ───────────────────────────────────────────
@@ -43,7 +36,6 @@ export function FloatingToolbar({
   fontSize,
   textAlign,
   onUpdateStyle,
-  position,
 }: FloatingToolbarProps) {
   const run = (cmd: () => void) => (e: React.MouseEvent) => {
     e.preventDefault();
@@ -51,166 +43,152 @@ export function FloatingToolbar({
     cmd();
   };
 
+  // If no editor, show an empty placeholder bar
+  if (!editor) {
+    return (
+      <div style={BAR_STYLE}>
+        <span style={{ color: '#484f58', fontSize: 13, fontFamily: 'var(--brand-font-family)' }}>
+          انقر مرتين على النص للتحرير
+        </span>
+      </div>
+    );
+  }
+
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: position.top,
-        left: position.left,
-        transform: 'translateX(-50%)',
-        zIndex: 10000,
-        background: '#1c2128',
-        border: '1px solid #30363d',
-        borderRadius: 8,
-        padding: '6px 8px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 2,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-        direction: 'ltr',
-        flexWrap: 'wrap',
-        maxWidth: 520,
-      }}
-      onMouseDown={(e) => e.stopPropagation()}
-    >
+    <div style={BAR_STYLE} data-floating-toolbar onMouseDown={(e) => e.stopPropagation()}>
       {/* ── Text format marks ── */}
-      <ToolBtn
-        active={editor.isActive('bold')}
-        onClick={run(() => editor.chain().focus().toggleBold().run())}
-        title="عريض"
-      >
-        <strong>B</strong>
-      </ToolBtn>
-      <ToolBtn
-        active={editor.isActive('italic')}
-        onClick={run(() => editor.chain().focus().toggleItalic().run())}
-        title="مائل"
-      >
-        <em>I</em>
-      </ToolBtn>
-      <ToolBtn
-        active={editor.isActive('underline')}
-        onClick={run(() => editor.chain().focus().toggleUnderline().run())}
-        title="تسطير"
-      >
-        <span style={{ textDecoration: 'underline' }}>U</span>
-      </ToolBtn>
-      <ToolBtn
-        active={editor.isActive('strike')}
-        onClick={run(() => editor.chain().focus().toggleStrike().run())}
-        title="يتوسطه خط"
-      >
-        <s>S</s>
-      </ToolBtn>
+      <Group>
+        <ToolBtn active={editor.isActive('bold')} onClick={run(() => editor.chain().focus().toggleBold().run())} title="عريض">
+          <strong>B</strong>
+        </ToolBtn>
+        <ToolBtn active={editor.isActive('italic')} onClick={run(() => editor.chain().focus().toggleItalic().run())} title="مائل">
+          <em>I</em>
+        </ToolBtn>
+        <ToolBtn active={editor.isActive('underline')} onClick={run(() => editor.chain().focus().toggleUnderline().run())} title="تسطير">
+          <span style={{ textDecoration: 'underline' }}>U</span>
+        </ToolBtn>
+        <ToolBtn active={editor.isActive('strike')} onClick={run(() => editor.chain().focus().toggleStrike().run())} title="يتوسطه خط">
+          <s>S</s>
+        </ToolBtn>
+      </Group>
 
       <Divider />
 
       {/* ── Font size ── */}
-      <ToolBtn
-        onClick={run(() => onUpdateStyle({ fontSize: Math.max(12, fontSize - 2) }))}
-        title="تصغير"
-      >
-        A-
-      </ToolBtn>
-      <span style={{
-        fontSize: 12, color: '#e6edf3', minWidth: 28,
-        textAlign: 'center', fontFamily: 'system-ui', userSelect: 'none',
-      }}>
-        {fontSize}
-      </span>
-      <ToolBtn
-        onClick={run(() => onUpdateStyle({ fontSize: Math.min(120, fontSize + 2) }))}
-        title="تكبير"
-      >
-        A+
-      </ToolBtn>
+      <Group>
+        <ToolBtn onClick={run(() => onUpdateStyle({ fontSize: Math.max(12, fontSize - 2) }))} title="تصغير">
+          <span style={{ fontSize: 16, lineHeight: 1 }}>−</span>
+        </ToolBtn>
+        <span style={{
+          fontSize: 14, color: '#e6edf3', minWidth: 36,
+          textAlign: 'center', fontFamily: 'system-ui', userSelect: 'none',
+          fontWeight: 600,
+        }}>
+          {fontSize}
+        </span>
+        <ToolBtn onClick={run(() => onUpdateStyle({ fontSize: Math.min(120, fontSize + 2) }))} title="تكبير">
+          <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>
+        </ToolBtn>
+      </Group>
 
       <Divider />
 
-      {/* ── Text alignment (block-level) ── */}
-      <ToolBtn
-        active={textAlign === 'right'}
-        onClick={run(() => onUpdateStyle({ textAlign: 'right' }))}
-        title="يمين"
-      >
-        ≡⟩
-      </ToolBtn>
-      <ToolBtn
-        active={textAlign === 'center'}
-        onClick={run(() => onUpdateStyle({ textAlign: 'center' }))}
-        title="وسط"
-      >
-        ≡
-      </ToolBtn>
-      <ToolBtn
-        active={textAlign === 'left'}
-        onClick={run(() => onUpdateStyle({ textAlign: 'left' }))}
-        title="يسار"
-      >
-        ⟨≡
-      </ToolBtn>
+      {/* ── Alignment ── */}
+      <Group>
+        <ToolBtn active={textAlign === 'right'} onClick={run(() => onUpdateStyle({ textAlign: 'right' }))} title="يمين">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="2" width="16" height="2" rx="1"/><rect x="4" y="7" width="12" height="2" rx="1"/><rect x="0" y="12" width="16" height="2" rx="1"/></svg>
+        </ToolBtn>
+        <ToolBtn active={textAlign === 'center'} onClick={run(() => onUpdateStyle({ textAlign: 'center' }))} title="وسط">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="2" width="16" height="2" rx="1"/><rect x="2" y="7" width="12" height="2" rx="1"/><rect x="0" y="12" width="16" height="2" rx="1"/></svg>
+        </ToolBtn>
+        <ToolBtn active={textAlign === 'left'} onClick={run(() => onUpdateStyle({ textAlign: 'left' }))} title="يسار">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="2" width="16" height="2" rx="1"/><rect x="0" y="7" width="12" height="2" rx="1"/><rect x="0" y="12" width="16" height="2" rx="1"/></svg>
+        </ToolBtn>
+      </Group>
 
       <Divider />
 
       {/* ── Lists ── */}
-      <ToolBtn
-        active={editor.isActive('bulletList')}
-        onClick={run(() => editor.chain().focus().toggleBulletList().run())}
-        title="قائمة نقطية"
-      >
-        •≡
-      </ToolBtn>
-      <ToolBtn
-        active={editor.isActive('orderedList')}
-        onClick={run(() => editor.chain().focus().toggleOrderedList().run())}
-        title="قائمة مرقمة"
-      >
-        1≡
-      </ToolBtn>
+      <Group>
+        <ToolBtn active={editor.isActive('bulletList')} onClick={run(() => editor.chain().focus().toggleBulletList().run())} title="قائمة نقطية">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="2" cy="4" r="1.5"/><rect x="5" y="3" width="11" height="2" rx="1"/><circle cx="2" cy="8" r="1.5"/><rect x="5" y="7" width="11" height="2" rx="1"/><circle cx="2" cy="12" r="1.5"/><rect x="5" y="11" width="11" height="2" rx="1"/></svg>
+        </ToolBtn>
+        <ToolBtn active={editor.isActive('orderedList')} onClick={run(() => editor.chain().focus().toggleOrderedList().run())} title="قائمة مرقمة">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><text x="1" y="5.5" fontSize="5" fontWeight="700" fontFamily="system-ui">1</text><rect x="5" y="3" width="11" height="2" rx="1"/><text x="1" y="9.5" fontSize="5" fontWeight="700" fontFamily="system-ui">2</text><rect x="5" y="7" width="11" height="2" rx="1"/><text x="1" y="13.5" fontSize="5" fontWeight="700" fontFamily="system-ui">3</text><rect x="5" y="11" width="11" height="2" rx="1"/></svg>
+        </ToolBtn>
+      </Group>
 
       <Divider />
 
       {/* ── Text color ── */}
-      {TEXT_COLORS.map(c => (
-        <ColorDot
-          key={c.hex}
-          hex={c.hex}
-          active={editor.isActive('textStyle', { color: c.hex })}
-          onClick={run(() => {
-            if (editor.isActive('textStyle', { color: c.hex })) {
-              editor.chain().focus().unsetColor().run();
-            } else {
-              editor.chain().focus().setColor(c.hex).run();
-            }
-          })}
-          title={c.label}
-        />
-      ))}
+      <Group label="لون النص">
+        {TEXT_COLORS.map(c => (
+          <ColorDot
+            key={c.hex}
+            hex={c.hex}
+            active={editor.isActive('textStyle', { color: c.hex })}
+            onClick={run(() => {
+              if (editor.isActive('textStyle', { color: c.hex })) {
+                editor.chain().focus().unsetColor().run();
+              } else {
+                editor.chain().focus().setColor(c.hex).run();
+              }
+            })}
+            title={c.label}
+          />
+        ))}
+      </Group>
 
       <Divider />
 
       {/* ── Highlight ── */}
-      {HIGHLIGHT_COLORS.map(c => (
-        <ColorDot
-          key={c.hex || 'none'}
-          hex={c.hex || 'transparent'}
-          active={c.hex ? editor.isActive('highlight', { color: c.hex }) : false}
-          onClick={run(() => {
-            if (!c.hex || editor.isActive('highlight', { color: c.hex })) {
-              editor.chain().focus().unsetHighlight().run();
-            } else {
-              editor.chain().focus().setHighlight({ color: c.hex }).run();
-            }
-          })}
-          title={c.label}
-          isHighlight
-        />
-      ))}
+      <Group label="تظليل">
+        {HIGHLIGHT_COLORS.map(c => (
+          <ColorDot
+            key={c.hex || 'none'}
+            hex={c.hex || 'transparent'}
+            active={c.hex ? editor.isActive('highlight', { color: c.hex }) : false}
+            onClick={run(() => {
+              if (!c.hex || editor.isActive('highlight', { color: c.hex })) {
+                editor.chain().focus().unsetHighlight().run();
+              } else {
+                editor.chain().focus().setHighlight({ color: c.hex }).run();
+              }
+            })}
+            title={c.label}
+            isHighlight
+          />
+        ))}
+      </Group>
     </div>
   );
 }
 
+// ─── Styles ──────────────────────────────────────────────────
+
+const BAR_STYLE: React.CSSProperties = {
+  height: 44,
+  background: '#161b22',
+  borderBottom: '1px solid #21262d',
+  display: 'flex',
+  alignItems: 'center',
+  padding: '0 16px',
+  gap: 4,
+  flexShrink: 0,
+  direction: 'ltr',
+  overflowX: 'auto',
+};
+
 // ─── Sub-components ──────────────────────────────────────────
+
+function Group({ children, label }: { children: React.ReactNode; label?: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+      {label && <span style={{ fontSize: 10, color: '#484f58', marginInlineEnd: 3, fontFamily: 'var(--brand-font-family)', whiteSpace: 'nowrap' }}>{label}</span>}
+      {children}
+    </div>
+  );
+}
 
 function ToolBtn({
   active, onClick, title, children,
@@ -226,13 +204,13 @@ function ToolBtn({
       onMouseDown={onClick}
       title={title}
       style={{
-        width: 28, height: 28,
+        width: 34, height: 34,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: active ? 'rgba(211,47,47,0.2)' : 'transparent',
         border: active ? '1px solid #D32F2F' : '1px solid transparent',
-        borderRadius: 4,
-        color: active ? '#ef5350' : '#8b949e',
-        fontSize: 12, fontWeight: 600,
+        borderRadius: 6,
+        color: active ? '#ef5350' : '#c9d1d9',
+        fontSize: 14, fontWeight: 600,
         cursor: 'pointer',
         fontFamily: 'system-ui',
         transition: 'all 0.1s',
@@ -258,10 +236,10 @@ function ColorDot({
       onMouseDown={onClick}
       title={title}
       style={{
-        width: 18, height: 18,
-        borderRadius: isHighlight ? 3 : '50%',
+        width: 22, height: 22,
+        borderRadius: isHighlight ? 4 : '50%',
         background: hex === 'transparent' ? '#1c2128' : hex,
-        border: `2px solid ${active ? '#ef5350' : (hex === '#FFFFFF' || hex === 'transparent' ? '#444' : hex)}`,
+        border: `2px solid ${active ? '#ef5350' : (hex === '#FFFFFF' || hex === 'transparent' ? '#555' : hex)}`,
         cursor: 'pointer',
         padding: 0,
         flexShrink: 0,
@@ -271,5 +249,5 @@ function ColorDot({
 }
 
 function Divider() {
-  return <div style={{ width: 1, height: 20, background: '#30363d', margin: '0 4px', flexShrink: 0 }} />;
+  return <div style={{ width: 1, height: 26, background: '#30363d', margin: '0 6px', flexShrink: 0 }} />;
 }

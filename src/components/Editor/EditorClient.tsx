@@ -18,6 +18,9 @@ import { makeBlankSlide } from './lib/slideFactory';
 import { SlideStrip } from './panels/SlideStrip';
 import { PropertiesPanel } from './panels/PropertiesPanel';
 import { CanvasInteractionLayer } from './canvas/CanvasInteractionLayer';
+import { FloatingToolbar } from './canvas/FloatingToolbar';
+import type { Editor } from '@tiptap/react';
+import type { TypographyProfile } from '@/types/album';
 import ajMainRaw from '../../../config/brands/aj-main.json';
 
 type LogoVariant = 'auto' | 'dark' | 'white';
@@ -36,6 +39,7 @@ export function EditorClient({ albumId }: { albumId: string }) {
   const selectedSlideId = useEditorUIStore((s) => s.selectedSlideId);
   const setSelectedSlide = useEditorUIStore((s) => s.setSelectedSlide);
   const [loadAttempted, setLoadAttempted] = useState(false);
+  const [activeEditor, setActiveEditor] = useState<Editor | null>(null);
 
   // ── Responsive canvas ──
   const canvasAreaRef = useRef<HTMLDivElement>(null);
@@ -199,6 +203,31 @@ export function EditorClient({ albumId }: { albumId: string }) {
     }
   }, [selectedSlide, album]);
 
+  // ── Toolbar data (for the fixed bar) ──
+  const selectedBlockForToolbar = selectedSlide?.blocks.find(
+    b => b.id === useEditorUIStore.getState().selectedBlockId
+  ) ?? null;
+
+  const toolbarFontSize = (() => {
+    if (!selectedBlockForToolbar) return 28;
+    const ref = ('typographyTokenRef' in selectedBlockForToolbar)
+      ? (selectedBlockForToolbar as { typographyTokenRef: string }).typographyTokenRef
+      : 'body-m';
+    const token = channelProfile.typography[ref as keyof TypographyProfile];
+    return selectedBlockForToolbar.styleOverrides?.fontSize ?? token?.fontSize ?? 28;
+  })();
+
+  const toolbarTextAlign = selectedBlockForToolbar?.styleOverrides?.textAlign ?? 'right';
+
+  const handleToolbarStyle = useCallback((overrides: Partial<BlockStyleOverride>) => {
+    const blockId = useEditorUIStore.getState().selectedBlockId;
+    if (!blockId || !selectedSlide) return;
+    updateSlide(selectedSlide.id, (slide) => {
+      const b = slide.blocks.find(b => b.id === blockId);
+      if (b) b.styleOverrides = { ...b.styleOverrides, ...overrides };
+    });
+  }, [selectedSlide, updateSlide]);
+
   // ── Loading / not-found ──
 
   const centerStyle: React.CSSProperties = {
@@ -254,6 +283,14 @@ export function EditorClient({ albumId }: { albumId: string }) {
         </div>
       </header>
 
+      {/* ── Formatting toolbar bar (fixed under header) ── */}
+      <FloatingToolbar
+        editor={activeEditor}
+        fontSize={toolbarFontSize}
+        textAlign={toolbarTextAlign}
+        onUpdateStyle={handleToolbarStyle}
+      />
+
       {/* ── Body: 3-panel layout ── */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}>
 
@@ -297,6 +334,7 @@ export function EditorClient({ albumId }: { albumId: string }) {
                     onUpdateBlockContent={handleUpdateBlockContent}
                     onUpdateBlockPosition={handleUpdateBlockPosition}
                     onUpdateBlockStyle={handleUpdateBlockStyleById}
+                    onEditorChange={setActiveEditor}
                   />
                 </div>
               </div>
