@@ -85,8 +85,8 @@ function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): stri
   const accentColor = album.theme?.primaryColor ?? '#D32F2F';
   const fontBase = process.env.FONT_BASE_URL ?? 'http://localhost:3000/fonts';
 
-  // Resolve typography from channel profile if provided
-  const typo = (ctx as any).channelProfile?.typography?.tokens as Record<string, any> | undefined;
+  // Resolve typography from channel profile (direct keys like 'heading-l', 'body-m')
+  const typo = ctx.channelProfile?.typography as Record<string, any> | undefined;
 
   // Sort visible blocks by zIndex
   const sortedBlocks = [...slide.blocks]
