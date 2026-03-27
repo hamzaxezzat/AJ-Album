@@ -138,10 +138,10 @@ export function InlineTextEditor({
         direction: token.direction,
         color: overrides?.color ?? (block.type === 'main_title' ? COLORS.accent : COLORS.textPrimary),
         // Editing chrome
-        outline: '2px solid #2196F3',
+        outline: '2px solid rgba(33,150,243,0.4)',
         outlineOffset: 2,
         borderRadius: 2,
-        background: 'rgba(255,255,255,0.95)',
+        background: '#FFFFFF',
         cursor: 'text',
         boxSizing: 'border-box',
         padding: 0,
