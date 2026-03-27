@@ -79,6 +79,39 @@ async function loadImageToCanvas(url: string, width: number, height: number): Pr
   });
 }
 
+// ─── Font name mapping (CSS → Photoshop PostScript) ──────────
+
+// Photoshop needs the exact PostScript name of the font, not the CSS family.
+// These map the CSS font-family to the installed font's PostScript name.
+const PS_FONT_MAP: Record<string, Record<number, string>> = {
+  'Al-Jazeera': {
+    300: 'AlJazeera-Light',
+    400: 'AlJazeera-Regular',
+    700: 'AlJazeera-Bold',
+    900: 'AlJazeera-Heavy',
+  },
+  'Cairo': {
+    400: 'Cairo-Regular',
+    600: 'Cairo-SemiBold',
+    700: 'Cairo-Bold',
+  },
+};
+
+function resolvePsFont(cssFamily: string, weight: number): string {
+  // Extract first font name from CSS stack: "'Al-Jazeera', Cairo, sans-serif" → "Al-Jazeera"
+  const firstName = cssFamily.split(',')[0].replace(/'/g, '').trim();
+  const weightMap = PS_FONT_MAP[firstName];
+  if (weightMap) {
+    // Find exact weight or closest
+    if (weightMap[weight]) return weightMap[weight];
+    // Fallback: 400 for light weights, 700 for bold
+    if (weight <= 400) return weightMap[400] ?? weightMap[300] ?? Object.values(weightMap)[0];
+    return weightMap[700] ?? weightMap[900] ?? Object.values(weightMap)[0];
+  }
+  // Unknown font — return as-is with weight suffix
+  return `${firstName}-Regular`;
+}
+
 // ─── Text layer builder ──────────────────────────────────────
 
 function renderTextToCanvas(
@@ -142,16 +175,18 @@ function buildTextLayer(
   hidden: boolean = false,
 ): Layer {
   const rgb = hexToColor(color);
-  const fontName = fontFamily.split(',')[0].replace(/'/g, '').trim();
+
+  // Map CSS font-family to Photoshop PostScript name
+  const psFontName = resolvePsFont(fontFamily, fontWeight);
 
   // Render text to canvas — Photoshop uses this as the preview/fallback
   const canvasAlign: CanvasTextAlign = textAlign === 'justify' ? 'right' : textAlign;
   const canvas = renderTextToCanvas(text, w, h, fontSize, fontWeight, fontFamily, color, canvasAlign, lineHeight);
 
   const textStyle: TextStyle = {
-    font: { name: fontName },
+    font: { name: psFontName },
     fontSize,
-    fauxBold: fontWeight >= 700,
+    fauxBold: false,
     leading: fontSize * lineHeight,
     fillColor: { r: rgb.r, g: rgb.g, b: rgb.b },
     tracking: 0,
