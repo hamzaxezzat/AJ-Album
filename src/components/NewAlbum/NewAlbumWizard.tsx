@@ -105,7 +105,7 @@ export function NewAlbumWizard() {
   return (
     <div className={styles.root}>
       <header className={styles.topBar}>
-        <Link href="/" className={styles.backLink}>← العودة</Link>
+        <Link href="/" className={styles.backLink}>العودة →</Link>
         <span className={styles.topTitle}>ألبوم جديد</span>
         <span className={styles.channelBadge}>الجزيرة</span>
       </header>
@@ -138,7 +138,7 @@ export function NewAlbumWizard() {
                 disabled={!scriptText.trim()}
                 style={{ flex: 1 }}
               >
-                تحليل السكريبت ←
+                → تحليل السكريبت
               </button>
               <button
                 type="button"
@@ -178,7 +178,7 @@ export function NewAlbumWizard() {
                 className={styles.reparseBtn}
                 onClick={() => setParsed(null)}
               >
-                ← تعديل السكريبت
+                تعديل السكريبت →
               </button>
             </div>
 

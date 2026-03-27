@@ -25,7 +25,7 @@ export function SlideStrip({
     <aside style={{
       width: 180,
       background: '#0d1117',
-      borderLeft: '1px solid #21262d',
+      borderInlineEnd: '1px solid #21262d',
       display: 'flex',
       flexDirection: 'column',
       flexShrink: 0,

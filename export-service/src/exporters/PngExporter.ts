@@ -112,11 +112,27 @@ type RichNode = {
 
 function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): string {
   const { width, height } = ctx.canvasDimensions;
-  const accentColor = album.theme?.primaryColor ?? '#D32F2F';
   const fontBase = process.env.FONT_BASE_URL ?? 'http://localhost:3000/fonts';
 
-  // Resolve typography from channel profile (direct keys like 'heading-l', 'body-m')
+  // Token cascade: album theme → slide overrides (mirrors resolveTokens.ts)
+  const theme = album.theme ?? {} as any;
+  const slideOverrides = (slide as any).themeOverrides ?? {};
+  const effectiveTheme = { ...theme, ...slideOverrides };
+  const accentColor = effectiveTheme.primaryColor ?? '#D32F2F';
+  const titleColor = effectiveTheme.titleColor ?? accentColor;
+  const bodyColor = effectiveTheme.bodyColor ?? '#1A1A1A';
+
+  // Resolve typography from channel profile, with theme overrides
   const typo = ctx.channelProfile?.typography as Record<string, any> | undefined;
+  // Apply font size/weight overrides from theme
+  const resolvedTypo: Record<string, any> = {};
+  if (typo) {
+    for (const key of Object.keys(typo)) resolvedTypo[key] = { ...typo[key] };
+    if (effectiveTheme.titleFontSize && resolvedTypo['heading-l']) resolvedTypo['heading-l'].fontSize = effectiveTheme.titleFontSize;
+    if (effectiveTheme.titleFontWeight && resolvedTypo['heading-l']) resolvedTypo['heading-l'].fontWeight = effectiveTheme.titleFontWeight;
+    if (effectiveTheme.bodyFontSize && resolvedTypo['body-m']) resolvedTypo['body-m'].fontSize = effectiveTheme.bodyFontSize;
+    if (effectiveTheme.bodyFontWeight && resolvedTypo['body-m']) resolvedTypo['body-m'].fontWeight = effectiveTheme.bodyFontWeight;
+  }
 
   // Sort visible blocks by zIndex
   const sortedBlocks = [...slide.blocks]
@@ -128,12 +144,12 @@ function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): stri
   const hasImage = !!(slide.image?.asset?.url);
   const imageUrl = slide.image?.asset?.url ?? '';
 
-  // Build block HTML
+  // Build block HTML — C1 fix: use `left:` not `right:` (matches browser renderer)
   const blocksHtml = sortedBlocks.map(block => {
     const b = block as any;
     const pos = block.position;
     const posStyle = `position:absolute;`
-      + `right:calc(${width}px * ${pos.x});`
+      + `left:calc(${width}px * ${pos.x});`
       + `top:calc(${height}px * ${pos.y});`
       + `width:calc(${width}px * ${pos.width});`
       + `height:calc(${height}px * ${pos.height});`
@@ -141,19 +157,20 @@ function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): stri
       + `overflow:hidden;direction:rtl;`;
 
     const typoRef = (b.typographyTokenRef as string) ?? '';
-    const typoToken = typo?.[typoRef] as any | undefined;
+    const typoToken = resolvedTypo[typoRef] ?? typo?.[typoRef] as any;
     const overrides = block.styleOverrides ?? {};
 
     const fontSize = (overrides as any).fontSize as number
       ?? (typoToken?.fontSize as number) ?? 38;
-    const fontWeight = (typoToken?.fontWeight as number) ?? 400;
+    const fontWeight = (overrides as any).fontWeight as number
+      ?? (typoToken?.fontWeight as number) ?? 400;
     const lineHeight = (typoToken?.lineHeight as number) ?? 1.6;
     const fontFamily = (typoToken?.fontFamily as string)
       ?? "'Al-Jazeera', Cairo, sans-serif";
 
     switch (block.type) {
       case 'main_title': {
-        const color = (overrides as any).color as string ?? accentColor;
+        const color = (overrides as any).color as string ?? titleColor;
         return `<div style="${posStyle}font-family:${fontFamily};font-size:${fontSize}px;font-weight:700;line-height:${lineHeight};color:${color};text-align:right;text-wrap:balance;">`
           + renderRichContent(b.content as RichNode)
           + `</div>`;
@@ -168,11 +185,16 @@ function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): stri
 
       case 'body_paragraph':
       case 'text_box': {
-        const color = (overrides as any).color as string ?? '#1A1A1A';
-        const textAlign = (overrides as any).textAlign as string ?? 'justify';
-        const kashida = (b.kashidaEnabled !== false);
-        return `<div style="${posStyle}font-family:${fontFamily};font-size:${fontSize}px;font-weight:${fontWeight};line-height:${lineHeight};color:${color};text-align:${textAlign};${kashida ? 'text-justify:kashida;' : ''}">`
-          + renderRichContent(b.content as RichNode)
+        const color = (overrides as any).color as string ?? bodyColor;
+        const textAlign = (overrides as any).textAlign as string ?? (b.kashidaEnabled !== false ? 'justify' : 'right');
+        const kashidaOn = (b.kashidaEnabled !== false);
+        let html = renderRichContent(b.content as RichNode);
+        // C6 fix: insert tatweel characters for kashida (same as browser renderer)
+        if (kashidaOn) {
+          html = html.replace(/>([^<]+)</g, (_m, text) => '>' + applySimpleKashida(text as string) + '<');
+        }
+        return `<div style="${posStyle}font-family:${fontFamily};font-size:${fontSize}px;font-weight:${fontWeight};line-height:${lineHeight};color:${color};text-align:${textAlign};">`
+          + html
           + `</div>`;
       }
 
@@ -209,11 +231,11 @@ function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): stri
       }
 
       case 'credential_row': {
-        const rows = (b.rows as Array<{ label: string; value: string }>) ?? [];
+        const rows = (b.rows as Array<{ label: string; value: RichNode | string }>) ?? [];
         const rowsHtml = rows.map(r =>
           `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.08);">`
           + `<span style="font-weight:600;color:${accentColor};">${escapeHtml(r.label)}</span>`
-          + `<span style="color:#1A1A1A;">${escapeHtml(r.value)}</span>`
+          + `<span style="color:#1A1A1A;">${typeof r.value === 'string' ? escapeHtml(r.value) : renderRichContent(r.value)}</span>`
           + `</div>`
         ).join('');
         return `<div style="${posStyle}font-family:${fontFamily};font-size:${fontSize}px;line-height:${lineHeight};">${rowsHtml}</div>`;
@@ -275,7 +297,20 @@ function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): stri
     bannerHtml = `<div style="position:absolute;left:0;right:0;top:${bannerTop};height:calc(${height}px * ${bannerHeight});background:${accentColor};z-index:20;"></div>`;
   }
 
-  // Footer
+  // C2: Channel logo
+  const cp = ctx.channelProfile as any;
+  const logoUrl = cp?.logo?.primary?.url ?? '';
+  const logoMarginTop = Math.round(height * (90 / 1350));
+  const logoMarginLeft = Math.round(width * (90 / 1080));
+  const logoWidth = Math.round(width * 0.09);
+  const logoHtml = logoUrl
+    ? `<img src="${fontBase.replace('/fonts', '')}${logoUrl}" style="position:absolute;top:${logoMarginTop}px;left:${logoMarginLeft}px;width:${logoWidth}px;height:auto;z-index:50;pointer-events:none;" />`
+    : '';
+
+  // C3/C4: Footer from channel profile
+  const footer = cp?.footer ?? {};
+  const footerHeight = footer.height ?? 0.074;
+  const socialHandles = (footer.socialHandles ?? []) as Array<{ platform: string; handle: string }>;
   const totalSlides = (ctx as any).totalSlides as number ?? slide.number;
   const dotsHtml = Array.from({ length: totalSlides }, (_, i) =>
     `<div style="width:8px;height:8px;border-radius:50%;background:${i === slide.number - 1 ? accentColor : '#CCC'};"></div>`
@@ -316,18 +351,19 @@ function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): stri
     .slide { position:relative; width:${width}px; height:${height}px; background:#fff; overflow:hidden; }
     .image-zone { position:absolute; top:calc(${height}px * ${imageRect.y}); left:calc(${width}px * ${imageRect.x}); width:calc(${width}px * ${imageRect.width}); height:calc(${height}px * ${imageRect.height}); background:#E0E0E0; overflow:hidden; z-index:1; display:flex; align-items:center; justify-content:center; color:#9E9E9E; font-size:20px; }
     .image-zone img { width:100%; height:100%; object-fit:${slide.image?.objectFit ?? 'cover'}; }
-    .footer { position:absolute; bottom:0; left:0; right:0; height:calc(${height}px * 0.074); background:#fff; border-top:1px solid rgba(0,0,0,0.08); display:flex; align-items:center; justify-content:space-between; padding:0 calc(${width}px * 0.03); direction:rtl; z-index:100; }
+    .footer { position:absolute; bottom:0; left:0; right:0; height:calc(${height}px * ${footerHeight}); background:${footer.backgroundColor ?? '#fff'}; border-top:1px solid rgba(0,0,0,0.08); display:flex; align-items:center; justify-content:space-between; padding:0 calc(${width}px * 0.04); direction:rtl; z-index:100; }
     .dots { display:flex; gap:6px; align-items:center; }
   </style>
 </head>
 <body>
   <div class="slide">
     <div class="image-zone">${hasImage ? `<img src="${escapeHtml(imageUrl)}" alt="" />` : ''}</div>
+    ${logoHtml}
     ${blocksHtml}
     ${bannerHtml}
     <div class="footer">
-      <div style="font-family:'Al-Jazeera',Cairo,sans-serif;font-size:18px;color:#888;direction:ltr;">
-        @aljazeerachannel &nbsp; @ajarabic
+      <div style="font-family:${primaryFontFamily};font-size:${resolvedTypo['label']?.fontSize ?? 18}px;color:${footer.textColor ?? '#888'};direction:ltr;display:flex;gap:6px;align-items:center;">
+        ${socialHandles.map((h: any) => escapeHtml(h.handle ?? '')).filter(Boolean).map((handle: string) => `<span>${handle}</span>`).join(' ')}
       </div>
       <div class="dots">${dotsHtml}</div>
     </div>
@@ -386,4 +422,29 @@ function extractPlainText(content: RichNode | undefined): string {
 
 function escapeHtml(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ─── Simple kashida for export (mirrors kashidaEngine.ts) ────
+
+const TATWEEL = '\u0640';
+const DISCONNECTED = new Set(['\u0627','\u0623','\u0625','\u0622','\u0671','\u062F','\u0630','\u0631','\u0632','\u0648','\u0649']);
+const FORBIDDEN = new Set(['على','إلى','الى','إلا','هذا','هذه','ذلك','عن','من','ما','لا','أن','إن','أو','في','كل','له','هو','هي']);
+
+function applySimpleKashida(text: string): string {
+  const clean = text.replace(new RegExp(TATWEEL, 'g'), '');
+  return clean.split(/(\s+)/).map(word => {
+    if (/^\s+$/.test(word) || word.length < 3 || FORBIDDEN.has(word.replace(/[\u064B-\u0652]/g, ''))) return word;
+    let best = -1;
+    for (let i = 1; i < word.length - 1; i++) {
+      const ch = word[i];
+      const code = ch.charCodeAt(0);
+      if (code < 0x0600 || code > 0x06FF) continue;
+      if (DISCONNECTED.has(ch) || ch === '\u0644' || word[i+1] === '\u0644') continue;
+      if (word[i+1] === '\u064A' || word[i+1] === '\u0629') continue;
+      best = i;
+      break;
+    }
+    if (best === -1) return word;
+    return word.slice(0, best + 1) + TATWEEL + word.slice(best + 1);
+  }).join('');
 }

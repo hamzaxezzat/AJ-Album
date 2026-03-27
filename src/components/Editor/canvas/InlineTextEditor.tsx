@@ -108,6 +108,15 @@ export function InlineTextEditor({
     if (editor) editor.commands.focus('end');
   }, [editor]);
 
+  // Escape key closes editor
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClickOutside();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onClickOutside]);
+
   if (!editor || !token) return null;
 
   // Position in canvas pixels

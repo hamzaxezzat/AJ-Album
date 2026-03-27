@@ -20,7 +20,7 @@ export function useSlideManagement() {
 
   const handleAddSlide = useCallback(() => {
     if (!album) return;
-    if (album) pushSnapshot(album);
+    pushSnapshot(album);
     const idx = album.slides.findIndex(s => s.id === selectedSlideId);
     const after = idx >= 0 ? idx : album.slides.length - 1;
     const ns = makeBlankSlide(after + 2);
@@ -30,6 +30,7 @@ export function useSlideManagement() {
 
   const handleDeleteSlide = useCallback((slideId: string) => {
     if (!album || album.slides.length <= 1) return;
+    if (!confirm('حذف هذه الشريحة؟')) return;
     pushSnapshot(album);
     const idx = album.slides.findIndex(s => s.id === slideId);
     deleteSlide(slideId);

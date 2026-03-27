@@ -104,9 +104,9 @@ export function SlideRenderer({
 
         // Use concrete pixel values from tokens — same canvas coordinate system,
         // no CSS-var/zoom interaction issues.
-        const LOGO_MARGIN_TOP  = Math.round(tokens.canvasHeight * (LOGO.marginTop / tokens.canvasHeight));
-        const LOGO_MARGIN_LEFT = Math.round(tokens.canvasWidth  * (LOGO.marginLeft / tokens.canvasWidth));
-        const LOGO_WIDTH       = Math.round(tokens.canvasWidth  * LOGO.widthFraction);
+        const LOGO_MARGIN_TOP  = LOGO.marginTop;
+        const LOGO_MARGIN_LEFT = LOGO.marginLeft;
+        const LOGO_WIDTH       = Math.round(tokens.canvasWidth * LOGO.widthFraction);
 
         return (
           // eslint-disable-next-line @next/next/no-img-element

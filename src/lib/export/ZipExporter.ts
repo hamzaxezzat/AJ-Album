@@ -85,7 +85,7 @@ export class ZipExporter implements ClientExporter {
       const batch = slides.slice(i, i + BATCH_SIZE);
 
       if (onProgress) {
-        onProgress({ current: i, total, slideNumber: batch[0].number });
+        onProgress({ current: i + 1, total, slideNumber: batch[0].number });
       }
 
       const batchResults = await Promise.allSettled(

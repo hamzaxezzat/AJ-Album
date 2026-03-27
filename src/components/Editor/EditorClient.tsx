@@ -102,8 +102,9 @@ export function EditorClient({ albumId }: { albumId: string }) {
   }, [handleUndo, handleRedo]);
 
   // ── Toolbar data (for the fixed bar) ──
+  const selectedBlockId = useEditorUIStore(s => s.selectedBlockId);
   const selectedBlockForToolbar = selectedSlide?.blocks.find(
-    b => b.id === useEditorUIStore.getState().selectedBlockId
+    b => b.id === selectedBlockId
   ) ?? null;
 
   const toolbarFontSize = (() => {
@@ -192,7 +193,7 @@ export function EditorClient({ albumId }: { albumId: string }) {
         borderBottom: '1px solid #21262d', flexShrink: 0, direction: 'rtl',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Link href="/" style={{ color: '#8b949e', textDecoration: 'none', fontSize: 20, lineHeight: 1 }}>&#8592;</Link>
+          <Link href="/" style={{ color: '#8b949e', textDecoration: 'none', fontSize: 20, lineHeight: 1 }}>&#8594;</Link>
           <span style={{ fontFamily: 'var(--brand-font-family)', fontWeight: 700, fontSize: 15, color: '#e6edf3' }} dir="rtl" lang="ar">
             {album.title}
           </span>
@@ -326,7 +327,7 @@ export function EditorClient({ albumId }: { albumId: string }) {
         {/* Right: Properties panel */}
         <aside style={{
           width: 300, background: '#161b22',
-          borderRight: '1px solid #21262d', overflow: 'hidden', flexShrink: 0,
+          borderInlineStart: '1px solid #21262d', overflow: 'hidden', flexShrink: 0,
         }}>
           {selectedSlide ? (
             <PropertiesPanel

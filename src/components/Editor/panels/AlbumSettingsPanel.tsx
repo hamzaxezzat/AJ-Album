@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { AlbumTheme, ChannelProfile, BannerPosition, BulletStyle, BulletConnectorConfig } from '@/types/album';
 import { LABEL_STYLE, toggleBtnStyle } from './styles';
 import { getSavedThemes, type SavedTheme } from '@/lib/themeStore';
@@ -64,6 +64,10 @@ export function AlbumSettingsPanel({ theme, channelProfile, onUpdateTheme }: Alb
 
   const [hexInput, setHexInput] = useState(effectiveTitleColor);
   const [connectorHexInput, setConnectorHexInput] = useState(connector.color);
+
+  // Sync hex inputs when theme changes (undo/redo, theme apply)
+  useEffect(() => { setHexInput(effectiveTitleColor); }, [effectiveTitleColor]);
+  useEffect(() => { setConnectorHexInput(connector.color); }, [connector.color]);
 
   const updateConnector = (patch: Partial<BulletConnectorConfig>) => {
     onUpdateTheme(t => {

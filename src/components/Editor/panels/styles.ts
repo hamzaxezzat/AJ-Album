@@ -6,8 +6,7 @@ export const LABEL_STYLE: React.CSSProperties = {
   color: '#7d8590',
   marginBottom: 6,
   fontFamily: 'system-ui',
-  textTransform: 'uppercase',
-  letterSpacing: '0.05em',
+  letterSpacing: '0.02em',
 };
 
 export const INPUT_STYLE: React.CSSProperties = {
