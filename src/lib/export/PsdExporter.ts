@@ -5,7 +5,7 @@
 // Shape blocks become rasterized layers.
 // Uses ag-psd library.
 
-import type { Psd, Layer, LayerTextData, TextStyle, ParagraphStyle } from 'ag-psd';
+import type { Psd, Layer } from 'ag-psd';
 import { writePsd } from 'ag-psd';
 import type { Album, Slide, ChannelProfile, ContentBlock, ResolvedTokens, TypographyProfile } from '@/types/album';
 import { resolveTokens } from '@/lib/tokens/resolveTokens';
@@ -174,61 +174,15 @@ function buildTextLayer(
   textAlign: 'right' | 'left' | 'center' | 'justify' = 'right',
   hidden: boolean = false,
 ): Layer {
-  const rgb = hexToColor(color);
-
-  // Map CSS font-family to Photoshop PostScript name
-  const psFontName = resolvePsFont(fontFamily, fontWeight);
-
-  // Render text to canvas — Photoshop uses this as the preview/fallback
+  // Render text to canvas with correct font, size, color, and word-wrap
   const canvasAlign: CanvasTextAlign = textAlign === 'justify' ? 'right' : textAlign;
   const canvas = renderTextToCanvas(text, w, h, fontSize, fontWeight, fontFamily, color, canvasAlign, lineHeight);
-
-  const textStyle: TextStyle = {
-    font: { name: psFontName },
-    fontSize,
-    fauxBold: false,
-    leading: fontSize * lineHeight,
-    fillColor: { r: rgb.r, g: rgb.g, b: rgb.b },
-    tracking: 0,
-    autoKerning: true,
-  };
-
-  const justification: ParagraphStyle['justification'] =
-    textAlign === 'justify' ? 'justify-right'
-    : textAlign === 'center' ? 'center'
-    : textAlign === 'left' ? 'left'
-    : 'right';
-
-  const paragraphStyle: ParagraphStyle = {
-    justification,
-  };
-
-  // Text data for editable text layer
-  // The text content must end with \r for Photoshop compatibility
-  const psText = text.replace(/\n/g, '\r') + '\r';
-
-  const textData: LayerTextData = {
-    text: psText,
-    // Transform positions the text box origin at (x, y)
-    // boxBounds are relative to this origin: [top, left, bottom, right]
-    transform: [1, 0, 0, 1, x, y],
-    antiAlias: 'sharp',
-    style: textStyle,
-    styleRuns: [{ length: psText.length, style: textStyle }],
-    paragraphStyle,
-    paragraphStyleRuns: [{ length: psText.length, style: paragraphStyle }],
-    shapeType: 'box',
-    boxBounds: [0, 0, h, w],
-  };
 
   return {
     name,
     left: x,
     top: y,
-    right: x + w,
-    bottom: y + h,
     canvas,
-    text: textData,
     hidden,
   };
 }
@@ -393,10 +347,6 @@ async function buildSlideLayers(
       // Offset for artboard positioning
       if (offsetX > 0) {
         layer.left = (layer.left ?? 0) + offsetX;
-        if (layer.text?.transform) {
-          // Offset transform X for artboard position
-          layer.text.transform[4] = (layer.text.transform[4] ?? 0) + offsetX;
-        }
       }
       layers.push(layer);
     }
