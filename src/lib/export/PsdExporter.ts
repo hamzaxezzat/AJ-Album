@@ -209,16 +209,16 @@ function buildTextLayer(
 
   const textData: LayerTextData = {
     text: psText,
-    // Identity transform — positions come from boxBounds in absolute coords
-    transform: [1, 0, 0, 1, 0, 0],
+    // Transform positions the text box origin at (x, y)
+    // boxBounds are relative to this origin: [top, left, bottom, right]
+    transform: [1, 0, 0, 1, x, y],
     antiAlias: 'sharp',
     style: textStyle,
     styleRuns: [{ length: psText.length, style: textStyle }],
     paragraphStyle,
     paragraphStyleRuns: [{ length: psText.length, style: paragraphStyle }],
     shapeType: 'box',
-    // Absolute coordinates: [top, left, bottom, right]
-    boxBounds: [y, x, y + h, x + w],
+    boxBounds: [0, 0, h, w],
   };
 
   return {
@@ -393,12 +393,9 @@ async function buildSlideLayers(
       // Offset for artboard positioning
       if (offsetX > 0) {
         layer.left = (layer.left ?? 0) + offsetX;
-        if (layer.text) {
-          // Offset boxBounds for artboard position
-          if (layer.text.boxBounds) {
-            layer.text.boxBounds[1] = (layer.text.boxBounds[1] ?? 0) + offsetX; // left
-            layer.text.boxBounds[3] = (layer.text.boxBounds[3] ?? 0) + offsetX; // right
-          }
+        if (layer.text?.transform) {
+          // Offset transform X for artboard position
+          layer.text.transform[4] = (layer.text.transform[4] ?? 0) + offsetX;
         }
       }
       layers.push(layer);
