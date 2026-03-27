@@ -2,8 +2,10 @@ import type { TextBoxBlock, RectangleBlock, EllipseBlock, ShapeStyleConfig } fro
 import { plainToRichText } from './slideFactory';
 import { SHAPE } from '../../../../config/defaults';
 
+import { nanoid } from 'nanoid';
+
 function uid() {
-  return Math.random().toString(36).slice(2);
+  return nanoid();
 }
 
 const DEFAULT_SHAPE: ShapeStyleConfig = {

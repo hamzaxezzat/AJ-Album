@@ -1,5 +1,5 @@
 'use client';
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import type {
   RichTextContent,
   BlockStyleOverride,
@@ -22,32 +22,49 @@ export function useBlockUpdates(selectedSlide: Slide | null) {
   const updateSlide = useDocumentStore((s) => s.updateSlide);
   const album = useDocumentStore((s) => s.album);
   const pushSnapshot = useHistoryStore((s) => s.pushSnapshot);
+  const contentHistoryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const contentSnapshotPushed = useRef(false);
 
-  /** Push a history snapshot before any mutation */
+  /** Push a history snapshot before any mutation (immediate) */
   const withHistory = useCallback((fn: () => void) => {
     if (album) pushSnapshot(album);
     fn();
   }, [album, pushSnapshot]);
 
+  /** Push history snapshot debounced — for content typing (avoids 1 undo per keystroke) */
+  const withDebouncedHistory = useCallback((fn: () => void) => {
+    // Push snapshot only once at the START of a typing burst
+    if (!contentSnapshotPushed.current && album) {
+      pushSnapshot(album);
+      contentSnapshotPushed.current = true;
+    }
+    fn();
+    // Reset after 500ms pause — next keystroke after pause gets a new snapshot
+    if (contentHistoryTimer.current) clearTimeout(contentHistoryTimer.current);
+    contentHistoryTimer.current = setTimeout(() => {
+      contentSnapshotPushed.current = false;
+    }, 500);
+  }, [album, pushSnapshot]);
+
   const handleUpdateTitle = useCallback((content: RichTextContent) => {
     if (!selectedSlide) return;
-    withHistory(() => {
+    withDebouncedHistory(() => {
       updateSlide(selectedSlide.id, (slide) => {
         const b = slide.blocks.find(b => b.type === 'main_title');
         if (b) (b as MainTitleBlock).content = content;
       });
     });
-  }, [selectedSlide, updateSlide, withHistory]);
+  }, [selectedSlide, updateSlide, withDebouncedHistory]);
 
   const handleUpdateBody = useCallback((content: RichTextContent) => {
     if (!selectedSlide) return;
-    withHistory(() => {
+    withDebouncedHistory(() => {
       updateSlide(selectedSlide.id, (slide) => {
         const b = slide.blocks.find(b => b.type === 'body_paragraph');
         if (b) (b as BodyParagraphBlock).content = content;
       });
     });
-  }, [selectedSlide, updateSlide, withHistory]);
+  }, [selectedSlide, updateSlide, withDebouncedHistory]);
 
   const handleUpdateBlockStyle = useCallback((
     blockType: 'main_title' | 'body_paragraph',
@@ -126,7 +143,7 @@ export function useBlockUpdates(selectedSlide: Slide | null) {
   // Canvas interaction callbacks
   const handleUpdateBlockContent = useCallback((blockId: string, content: RichTextContent) => {
     if (!selectedSlide) return;
-    withHistory(() => {
+    withDebouncedHistory(() => {
       updateSlide(selectedSlide.id, (slide) => {
         const b = slide.blocks.find(b => b.id === blockId);
         if (b && 'content' in b) {
@@ -134,7 +151,7 @@ export function useBlockUpdates(selectedSlide: Slide | null) {
         }
       });
     });
-  }, [selectedSlide, updateSlide, withHistory]);
+  }, [selectedSlide, updateSlide, withDebouncedHistory]);
 
   const handleUpdateBlockPosition = useCallback((blockId: string, position: Partial<NormalizedRect>) => {
     if (!selectedSlide) return;

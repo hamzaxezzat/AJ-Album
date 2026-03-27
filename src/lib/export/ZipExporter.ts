@@ -35,6 +35,7 @@ export class ZipExporter implements ClientExporter {
         channelProfile,
         scale: options?.scale ?? 2,
       }),
+      signal: AbortSignal.timeout(30000), // 30s timeout per slide
     });
 
     if (!res.ok) {
@@ -78,22 +79,28 @@ export class ZipExporter implements ClientExporter {
     const results: SlideExportResult[] = [];
     const errors: { slideNumber: number; error: string }[] = [];
 
-    // Export slides sequentially to avoid overwhelming the service
-    for (let i = 0; i < slides.length; i++) {
-      const slide = slides[i];
+    // Export slides in parallel batches of 3 for speed
+    const BATCH_SIZE = 3;
+    for (let i = 0; i < slides.length; i += BATCH_SIZE) {
+      const batch = slides.slice(i, i + BATCH_SIZE);
 
       if (onProgress) {
-        onProgress({ current: i, total, slideNumber: slide.number });
+        onProgress({ current: i, total, slideNumber: batch[0].number });
       }
 
-      try {
-        const result = await this.exportSlide(slide, album, channelProfile, options);
-        results.push(result);
-      } catch (err) {
-        // Record the error but continue with remaining slides
-        const message = err instanceof Error ? err.message : String(err);
-        errors.push({ slideNumber: slide.number, error: message });
-        console.error(`[ZipExporter] Slide ${slide.number} failed:`, message);
+      const batchResults = await Promise.allSettled(
+        batch.map(slide => this.exportSlide(slide, album, channelProfile, options))
+      );
+
+      for (let j = 0; j < batchResults.length; j++) {
+        const r = batchResults[j];
+        if (r.status === 'fulfilled') {
+          results.push(r.value);
+        } else {
+          const message = r.reason instanceof Error ? r.reason.message : String(r.reason);
+          errors.push({ slideNumber: batch[j].number, error: message });
+          console.error(`[ZipExporter] Slide ${batch[j].number} failed:`, message);
+        }
       }
     }
 

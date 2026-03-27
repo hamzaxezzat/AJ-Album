@@ -23,6 +23,7 @@ import type { TypographyProfile } from '@/types/album';
 import ajMainRaw from '../../../config/brands/aj-main.json';
 
 const channelProfile = ajMainRaw as unknown as ChannelProfile;
+const KASHIDA_TYPES = new Set(['body_paragraph', 'text_box']);
 
 // ─── Editor Client ────────────────────────────────────────────
 
@@ -115,8 +116,6 @@ export function EditorClient({ albumId }: { albumId: string }) {
   })();
 
   const toolbarTextAlign = selectedBlockForToolbar?.styleOverrides?.textAlign ?? 'right';
-
-  const KASHIDA_TYPES = new Set(['body_paragraph', 'text_box']);
 
   const toolbarKashida = (() => {
     if (!selectedBlockForToolbar) return false;

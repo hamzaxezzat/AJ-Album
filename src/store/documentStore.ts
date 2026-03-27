@@ -1,6 +1,7 @@
 'use client';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
+import { nanoid } from 'nanoid';
 import type { Album, AlbumTheme, Slide, MainTitleBlock, BodyParagraphBlock, ContentBlock } from '@/types/album';
 import { storeImage, loadImage } from '@/lib/imageStore';
 
@@ -144,13 +145,13 @@ export const useDocumentStore = create<DocumentState>()(
         const src = state.album.slides[idx];
         // Deep clone via JSON round-trip, assign new id
         const clone = JSON.parse(JSON.stringify(src)) as Slide;
-        const newId = Math.random().toString(36).slice(2);
+        const newId = nanoid();
         clone.id = newId;
         clone.metadata.createdAt = new Date().toISOString();
         clone.metadata.updatedAt = new Date().toISOString();
         // Give each block a new ID to avoid collisions
         for (const block of clone.blocks) {
-          block.id = Math.random().toString(36).slice(2);
+          block.id = nanoid();
         }
         // Give image asset a new ID so IndexedDB entries are independent
         if (clone.image?.asset) {
@@ -237,6 +238,14 @@ export const useDocumentStore = create<DocumentState>()(
         localStorage.setItem(LS_KEY(album.id), JSON.stringify(albumToSave));
       } catch (e) {
         console.error('[documentStore] localStorage save failed:', e);
+        // Notify user if quota exceeded
+        if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('aj-save-error', {
+              detail: 'مساحة التخزين ممتلئة — احذف بعض الألبومات القديمة',
+            }));
+          }
+        }
       }
     },
 

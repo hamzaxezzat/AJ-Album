@@ -1,7 +1,9 @@
 'use client';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { compressImage } from '../lib/compressImage';
 import { LABEL_STYLE } from './styles';
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 interface ImageSectionProps {
   imageUrl: string | null;
@@ -10,15 +12,39 @@ interface ImageSectionProps {
 
 export function ImageSection({ imageUrl, onUpload }: ImageSectionProps) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setError('');
+
+    if (!file.type.startsWith('image/')) {
+      setError('الملف المختار ليس صورة');
+      e.target.value = '';
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      setError(`حجم الصورة كبير جداً (${(file.size / 1024 / 1024).toFixed(1)}MB) — الحد الأقصى 10MB`);
+      e.target.value = '';
+      return;
+    }
+
+    setLoading(true);
     const reader = new FileReader();
     reader.onload = async (ev) => {
-      const raw = ev.target?.result;
-      if (typeof raw === 'string') onUpload(await compressImage(raw));
+      try {
+        const raw = ev.target?.result;
+        if (typeof raw === 'string') onUpload(await compressImage(raw));
+      } catch {
+        setError('فشل في معالجة الصورة');
+      } finally {
+        setLoading(false);
+      }
     };
+    reader.onerror = () => { setError('فشل في قراءة الملف'); setLoading(false); };
     reader.readAsDataURL(file);
     e.target.value = '';
   };
@@ -73,6 +99,8 @@ export function ImageSection({ imageUrl, onUpload }: ImageSectionProps) {
         style={{ display: 'none' }}
         onChange={handleFileChange}
       />
+      {loading && <p style={{ fontSize: 11, color: '#8b949e', marginTop: 6 }}>جاري معالجة الصورة...</p>}
+      {error && <p style={{ fontSize: 11, color: '#ef5350', marginTop: 6 }}>{error}</p>}
     </div>
   );
 }

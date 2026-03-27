@@ -5,8 +5,10 @@
 import type { Album, Slide, MainTitleBlock, BodyParagraphBlock, RichTextContent } from '@/types/album';
 import { LAYOUT, CANVAS, THEME, COLORS, BANNER } from '../../config/defaults';
 
+import { nanoid } from 'nanoid';
+
 function uid() {
-  return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  return nanoid();
 }
 
 function rich(text: string): RichTextContent {

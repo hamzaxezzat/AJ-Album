@@ -83,10 +83,14 @@ export const useHistoryStore = create<HistoryState>()((set, get) => ({
       _applying: true,
     });
 
-    const restored = JSON.parse(snapshot) as Album;
+    let restored: Album;
+    try {
+      restored = JSON.parse(snapshot) as Album;
+    } catch {
+      queueMicrotask(() => set({ _applying: false }));
+      return null;
+    }
 
-    // Use queueMicrotask for reliable reset — runs after current synchronous
-    // call stack (including the caller's setAlbum) but before next event loop tick
     queueMicrotask(() => set({ _applying: false }));
 
     return restored;
@@ -106,7 +110,13 @@ export const useHistoryStore = create<HistoryState>()((set, get) => ({
       _applying: true,
     });
 
-    const restored = JSON.parse(snapshot) as Album;
+    let restored: Album;
+    try {
+      restored = JSON.parse(snapshot) as Album;
+    } catch {
+      queueMicrotask(() => set({ _applying: false }));
+      return null;
+    }
 
     queueMicrotask(() => set({ _applying: false }));
 

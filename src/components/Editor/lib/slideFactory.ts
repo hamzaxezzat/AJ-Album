@@ -1,3 +1,4 @@
+import { nanoid } from 'nanoid';
 import type { Slide, MainTitleBlock, BodyParagraphBlock, RichTextContent } from '@/types/album';
 import { LAYOUT, BANNER } from '../../../../config/defaults';
 
@@ -9,7 +10,7 @@ export function plainToRichText(text: string): RichTextContent {
 }
 
 export function makeBlankSlide(number: number): Slide {
-  const id = Math.random().toString(36).slice(2);
+  const id = nanoid();
   const now = new Date().toISOString();
   return {
     id,
