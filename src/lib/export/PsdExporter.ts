@@ -81,6 +81,54 @@ async function loadImageToCanvas(url: string, width: number, height: number): Pr
 
 // ─── Text layer builder ──────────────────────────────────────
 
+function renderTextToCanvas(
+  text: string,
+  w: number, h: number,
+  fontSize: number,
+  fontWeight: number,
+  fontFamily: string,
+  color: string,
+  textAlign: CanvasTextAlign,
+  lineHeight: number,
+): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d')!;
+
+  const rgb = hexToColor(color);
+  ctx.fillStyle = `rgb(${rgb.r},${rgb.g},${rgb.b})`;
+  ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+  ctx.textAlign = textAlign;
+  ctx.direction = 'rtl';
+  ctx.textBaseline = 'top';
+
+  const lineH = fontSize * lineHeight;
+  const xPos = textAlign === 'right' ? w - 4 : textAlign === 'center' ? w / 2 : 4;
+
+  const words = text.split(/\s+/);
+  let line = '';
+  let y = 4;
+
+  for (const word of words) {
+    const testLine = line ? line + ' ' + word : word;
+    const metrics = ctx.measureText(testLine);
+    if (metrics.width > w - 8 && line) {
+      ctx.fillText(line, xPos, y);
+      line = word;
+      y += lineH;
+      if (y > h - lineH) break;
+    } else {
+      line = testLine;
+    }
+  }
+  if (line && y <= h - fontSize) {
+    ctx.fillText(line, xPos, y);
+  }
+
+  return canvas;
+}
+
 function buildTextLayer(
   name: string,
   text: string,
@@ -95,6 +143,10 @@ function buildTextLayer(
 ): Layer {
   const rgb = hexToColor(color);
   const fontName = fontFamily.split(',')[0].replace(/'/g, '').trim();
+
+  // Render text to canvas — Photoshop uses this as the preview/fallback
+  const canvasAlign: CanvasTextAlign = textAlign === 'justify' ? 'right' : textAlign;
+  const canvas = renderTextToCanvas(text, w, h, fontSize, fontWeight, fontFamily, color, canvasAlign, lineHeight);
 
   const textStyle: TextStyle = {
     font: { name: fontName },
@@ -116,23 +168,21 @@ function buildTextLayer(
     justification,
   };
 
+  // Text data for editable text layer
+  // The text content must end with \r for Photoshop compatibility
+  const psText = text.replace(/\n/g, '\r') + '\r';
+
   const textData: LayerTextData = {
-    text,
-    // Transform positions the text layer in the PSD coordinate space
-    transform: [1, 0, 0, 1, x, y],
+    text: psText,
+    transform: [1, 0, 0, 1, 0, 0],
     antiAlias: 'sharp',
     style: textStyle,
-    styleRuns: [{ length: text.length, style: textStyle }],
+    styleRuns: [{ length: psText.length, style: textStyle }],
     paragraphStyle,
-    paragraphStyleRuns: [{ length: text.length, style: paragraphStyle }],
+    paragraphStyleRuns: [{ length: psText.length, style: paragraphStyle }],
     shapeType: 'box',
     boxBounds: [0, 0, h, w],
   };
-
-  // ag-psd still needs a canvas for the layer bounds even for text layers
-  const canvas = document.createElement('canvas');
-  canvas.width = w;
-  canvas.height = h;
 
   return {
     name,
