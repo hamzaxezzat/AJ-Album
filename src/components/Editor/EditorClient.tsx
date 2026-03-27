@@ -14,6 +14,7 @@ import { useBlockUpdates } from './hooks/useBlockUpdates';
 import { useSlideManagement } from './hooks/useSlideManagement';
 import { useExport } from './hooks/useExport';
 import { useLayerManagement } from './hooks/useLayerManagement';
+import { ReplaceContentDialog } from './panels/ReplaceContentDialog';
 import { SlideStrip } from './panels/SlideStrip';
 import { PropertiesPanel } from './panels/PropertiesPanel';
 import { CanvasInteractionLayer } from './canvas/CanvasInteractionLayer';
@@ -37,6 +38,7 @@ export function EditorClient({ albumId }: { albumId: string }) {
   const setSelectedSlide = useEditorUIStore((s) => s.setSelectedSlide);
   const [loadAttempted, setLoadAttempted] = useState(false);
   const [activeEditor, setActiveEditor] = useState<Editor | null>(null);
+  const [showReplaceContent, setShowReplaceContent] = useState(false);
 
   // ── History ──
   const undo = useHistoryStore((s) => s.undo);
@@ -199,6 +201,15 @@ export function EditorClient({ albumId }: { albumId: string }) {
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Replace content */}
+          <button type="button" onClick={() => setShowReplaceContent(true)} style={{
+            background: '#21262d', color: '#8b949e', border: '1px solid #30363d',
+            borderRadius: 5, padding: '6px 14px', fontSize: 13, cursor: 'pointer',
+            fontFamily: 'var(--brand-font-family)',
+          }}>
+            تغيير المحتوى
+          </button>
+
           {/* Undo / Redo */}
           <UndoRedoButtons
             canUndo={canUndo()}
@@ -379,6 +390,15 @@ export function EditorClient({ albumId }: { albumId: string }) {
           )}
         </aside>
       </div>
+
+      {/* Replace content dialog */}
+      {showReplaceContent && selectedSlide && (
+        <ReplaceContentDialog
+          album={album}
+          selectedSlide={selectedSlide}
+          onClose={() => setShowReplaceContent(false)}
+        />
+      )}
     </div>
   );
 }
