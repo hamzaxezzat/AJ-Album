@@ -174,10 +174,11 @@ function buildTextLayer(
   textAlign: 'right' | 'left' | 'center' | 'justify' = 'right',
   hidden: boolean = false,
 ): Layer {
+  // Render text to canvas — Photoshop uses this as the visual fallback
   const canvasAlign: CanvasTextAlign = textAlign === 'justify' ? 'right' : textAlign;
   const canvas = renderTextToCanvas(text, w, h, fontSize, fontWeight, fontFamily, color, canvasAlign, lineHeight);
 
-  // Build editable text layer
+  // Build editable text data
   const psFontName = resolvePsFont(fontFamily, fontWeight);
   const rgb = hexToColor(color);
   const psText = text.replace(/\n/g, '\r') + '\r';
@@ -202,44 +203,30 @@ function buildTextLayer(
   const textData: LayerTextData = {
     text: psText,
     orientation: 'horizontal',
-    transform: [1, 0, 0, 1, 0, 0],
+    // Transform: translate text box origin to (x, y) in document space
+    transform: [1, 0, 0, 1, x, y],
     antiAlias: 'sharp',
     style,
     styleRuns: [{ length: psText.length, style }],
     paragraphStyle: pStyle,
     paragraphStyleRuns: [{ length: psText.length, style: pStyle }],
     shapeType: 'box',
-    boxBounds: [y, x, y + h, x + w],
+    // boxBounds: [left, top, right, bottom] relative to transform origin
+    // width=960, height=81 → [0, 0, 960, 81]
+    boxBounds: [0, 0, w, h],
   };
 
-  // Blank canvas for the text layer (PS needs pixel data for bounds)
-  const textCanvas = document.createElement('canvas');
-  textCanvas.width = w;
-  textCanvas.height = h;
-
-  // Return a GROUP with 2 children:
-  // 1. Raster preview (visible) — exact design
-  // 2. Editable text (hidden) — user shows it to edit, then hides the raster
+  // Single layer: canvas (visual) + text data (editable)
+  // Photoshop shows the canvas preview but text is double-clickable to edit
   return {
     name,
-    opened: true,
-    children: [
-      {
-        name: name + ' (نص قابل للتعديل)',
-        left: x,
-        top: y,
-        canvas: textCanvas,
-        text: textData,
-        hidden: true, // hidden by default — user enables when editing
-      },
-      {
-        name: name + ' (رسم)',
-        left: x,
-        top: y,
-        canvas,
-        hidden,
-      },
-    ],
+    left: x,
+    top: y,
+    right: x + w,
+    bottom: y + h,
+    canvas,
+    text: textData,
+    hidden,
   };
 }
 
@@ -403,6 +390,10 @@ async function buildSlideLayers(
       // Offset for artboard positioning
       if (offsetX > 0) {
         layer.left = (layer.left ?? 0) + offsetX;
+        if (layer.right) layer.right = layer.right + offsetX;
+        if (layer.text?.transform) {
+          layer.text.transform[4] = (layer.text.transform[4] ?? 0) + offsetX;
+        }
       }
       layers.push(layer);
     }
