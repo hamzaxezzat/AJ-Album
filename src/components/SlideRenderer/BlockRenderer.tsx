@@ -2,6 +2,7 @@
 import React from 'react';
 import type { ContentBlock, ResolvedTokens, RichTextContent, TypographyProfile } from '@/types/album';
 import { normalizedToPixelStyle } from '@/lib/layout/normalizedToPixel';
+import { applyKashida } from '@/lib/kashida/kashidaEngine';
 import styles from './BlockRenderer.module.css';
 
 interface BlockRendererProps {
@@ -90,9 +91,16 @@ function nodeToHtml(node: DocNode): string {
   }
 }
 
-function richTextToHtml(content: RichTextContent | null | undefined): string {
+function richTextToHtml(content: RichTextContent | null | undefined, kashida?: boolean): string {
   if (!content || content.type !== 'doc' || !content.content) return '';
-  return (content.content as DocNode[]).map(n => nodeToHtml(n)).join('');
+  let html = (content.content as DocNode[]).map(n => nodeToHtml(n)).join('');
+  if (kashida) {
+    // Apply kashida to text content OUTSIDE of HTML tags
+    html = html.replace(/>([^<]+)</g, (match, text) => {
+      return '>' + applyKashida(text) + '<';
+    });
+  }
+  return html;
 }
 
 // ─── Typography helper ───────────────────────────────────────
@@ -173,9 +181,8 @@ export function BlockRenderer({ block, tokens }: BlockRendererProps) {
             ...typoStyle(block.typographyTokenRef, tokens.typography, block.styleOverrides),
             color: block.styleOverrides?.color ?? tokens.bodyColor,
             textAlign: isJustified ? 'justify' : (overrideAlign ?? undefined),
-            textJustify: (isJustified && block.kashidaEnabled) ? ('kashida' as React.CSSProperties['textJustify']) : undefined,
           }}
-          dangerouslySetInnerHTML={{ __html: richTextToHtml(block.content) }}
+          dangerouslySetInnerHTML={{ __html: richTextToHtml(block.content, block.kashidaEnabled) }}
         />
       );
     }
@@ -667,9 +674,8 @@ export function BlockRenderer({ block, tokens }: BlockRendererProps) {
             ...typoStyle(block.typographyTokenRef, tokens.typography, block.styleOverrides),
             color: block.styleOverrides?.color ?? tokens.textPrimary,
             textAlign: isJustified ? 'justify' : (overrideAlign ?? undefined),
-            textJustify: (isJustified && block.kashidaEnabled) ? ('kashida' as React.CSSProperties['textJustify']) : undefined,
           }}
-          dangerouslySetInnerHTML={{ __html: richTextToHtml(block.content) }}
+          dangerouslySetInnerHTML={{ __html: richTextToHtml(block.content, block.kashidaEnabled) }}
         />
       );
     }
