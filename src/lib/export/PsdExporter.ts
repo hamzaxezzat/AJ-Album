@@ -5,7 +5,7 @@
 // Shape blocks become rasterized layers.
 // Uses ag-psd library.
 
-import type { Psd, Layer } from 'ag-psd';
+import type { Psd, Layer, LayerTextData, TextStyle, ParagraphStyle } from 'ag-psd';
 import { writePsd } from 'ag-psd';
 import type { Album, Slide, ChannelProfile, ContentBlock, ResolvedTokens, TypographyProfile } from '@/types/album';
 import { resolveTokens } from '@/lib/tokens/resolveTokens';
@@ -174,16 +174,72 @@ function buildTextLayer(
   textAlign: 'right' | 'left' | 'center' | 'justify' = 'right',
   hidden: boolean = false,
 ): Layer {
-  // Render text to canvas with correct font, size, color, and word-wrap
   const canvasAlign: CanvasTextAlign = textAlign === 'justify' ? 'right' : textAlign;
   const canvas = renderTextToCanvas(text, w, h, fontSize, fontWeight, fontFamily, color, canvasAlign, lineHeight);
 
+  // Build editable text layer
+  const psFontName = resolvePsFont(fontFamily, fontWeight);
+  const rgb = hexToColor(color);
+  const psText = text.replace(/\n/g, '\r') + '\r';
+
+  const justification: ParagraphStyle['justification'] =
+    textAlign === 'justify' ? 'justify-right'
+    : textAlign === 'center' ? 'center'
+    : textAlign === 'left' ? 'left'
+    : 'right';
+
+  const style: TextStyle = {
+    font: { name: psFontName },
+    fontSize,
+    leading: fontSize * lineHeight,
+    fillColor: { r: rgb.r, g: rgb.g, b: rgb.b },
+    tracking: 0,
+    autoKerning: true,
+  };
+
+  const pStyle: ParagraphStyle = { justification };
+
+  const textData: LayerTextData = {
+    text: psText,
+    orientation: 'horizontal',
+    transform: [1, 0, 0, 1, 0, 0],
+    antiAlias: 'sharp',
+    style,
+    styleRuns: [{ length: psText.length, style }],
+    paragraphStyle: pStyle,
+    paragraphStyleRuns: [{ length: psText.length, style: pStyle }],
+    shapeType: 'box',
+    boxBounds: [y, x, y + h, x + w],
+  };
+
+  // Blank canvas for the text layer (PS needs pixel data for bounds)
+  const textCanvas = document.createElement('canvas');
+  textCanvas.width = w;
+  textCanvas.height = h;
+
+  // Return a GROUP with 2 children:
+  // 1. Raster preview (visible) — exact design
+  // 2. Editable text (hidden) — user shows it to edit, then hides the raster
   return {
     name,
-    left: x,
-    top: y,
-    canvas,
-    hidden,
+    opened: true,
+    children: [
+      {
+        name: name + ' (نص قابل للتعديل)',
+        left: x,
+        top: y,
+        canvas: textCanvas,
+        text: textData,
+        hidden: true, // hidden by default — user enables when editing
+      },
+      {
+        name: name + ' (رسم)',
+        left: x,
+        top: y,
+        canvas,
+        hidden,
+      },
+    ],
   };
 }
 
