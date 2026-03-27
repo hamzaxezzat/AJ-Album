@@ -233,6 +233,19 @@ export function EditorClient({ albumId }: { albumId: string }) {
             تصدير PSD
           </button>
 
+          {/* Export album PSD (all slides as artboards) */}
+          <button type="button" onClick={exportActions.handleExportAlbumPsd} disabled={exportActions.isExporting} style={{
+            background: '#1565C0', color: '#fff', border: 'none',
+            borderRadius: 5, padding: '6px 14px', fontSize: 13, cursor: 'pointer',
+            fontFamily: 'var(--brand-font-family)',
+            opacity: exportActions.isExporting ? 0.5 : 1,
+          }}>
+            {exportActions.isExporting && exportActions.exportProgress
+              ? `PSD ${exportActions.exportProgress.current}/${exportActions.exportProgress.total}`
+              : 'تصدير PSD الكل'
+            }
+          </button>
+
           {/* Export album ZIP */}
           <button type="button" onClick={exportActions.handleExportAlbum} disabled={exportActions.isExporting} style={{
             background: '#D32F2F', color: '#fff', border: 'none',

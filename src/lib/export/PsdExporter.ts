@@ -266,13 +266,14 @@ function blockToLayer(
   }
 }
 
-// ─── Public API ──────────────────────────────────────────────
+// ─── Build slide layers (shared by single + artboard export) ─
 
-export async function exportSlideToPsd(
+async function buildSlideLayers(
   slide: Slide,
   album: Album,
   channelProfile: ChannelProfile,
-): Promise<Blob> {
+  offsetX: number = 0,
+): Promise<Layer[]> {
   const { width, height } = album.canvasDimensions;
 
   const tokens = resolveTokens({
@@ -285,13 +286,13 @@ export async function exportSlideToPsd(
   const layers: Layer[] = [];
 
   // 1. Background
-  layers.push({ name: 'Background', canvas: createCanvas(width, height, tokens.background) });
+  layers.push({ name: 'Background', left: offsetX, top: 0, canvas: createCanvas(width, height, tokens.background) });
 
   // 2. Image
   if (slide.image) {
     const imgRect = normalizedToPixels(slide.image.rect, width, height);
     const imgCanvas = await loadImageToCanvas(slide.image.asset?.url ?? '', Math.round(imgRect.width), Math.round(imgRect.height));
-    layers.push({ name: 'Image', left: Math.round(imgRect.x), top: Math.round(imgRect.y), canvas: imgCanvas });
+    layers.push({ name: 'Image', left: offsetX + Math.round(imgRect.x), top: Math.round(imgRect.y), canvas: imgCanvas });
   }
 
   // 3. Content blocks (editable text layers)
@@ -299,7 +300,16 @@ export async function exportSlideToPsd(
   for (const block of sortedBlocks) {
     if (!block.visible) continue;
     const layer = blockToLayer(block, tokens, width, height);
-    if (layer) layers.push(layer);
+    if (layer) {
+      // Offset for artboard positioning
+      if (offsetX > 0) {
+        layer.left = (layer.left ?? 0) + offsetX;
+        if (layer.text?.transform) {
+          layer.text.transform[4] = (layer.text.transform[4] ?? 0) + offsetX;
+        }
+      }
+      layers.push(layer);
+    }
   }
 
   // 4. Banner
@@ -309,14 +319,90 @@ export async function exportSlideToPsd(
     if (slide.banner.position === 'bottom') bannerY = height - bannerH - Math.round(height * 0.074);
     else if (slide.banner.position === 'float-top') bannerY = Math.round(height * (slide.image?.rect.height ?? 0.55) - bannerH / 2);
     else if (slide.banner.position === 'float-bottom') bannerY = Math.round(height * (slide.image?.rect.height ?? 0.55) + height * 0.02);
-    layers.push({ name: 'Banner', left: 0, top: bannerY, canvas: createCanvas(width, bannerH, tokens.accentPrimary) });
+    layers.push({ name: 'Banner', left: offsetX, top: bannerY, canvas: createCanvas(width, bannerH, tokens.accentPrimary) });
   }
 
   // 5. Footer
   const footerH = Math.round(height * 0.074);
-  layers.push({ name: 'Footer', left: 0, top: height - footerH, canvas: createCanvas(width, footerH, tokens.background) });
+  layers.push({ name: 'Footer', left: offsetX, top: height - footerH, canvas: createCanvas(width, footerH, tokens.background) });
 
+  return layers;
+}
+
+// ─── Public API ──────────────────────────────────────────────
+
+/**
+ * Export a single slide as a PSD file.
+ */
+export async function exportSlideToPsd(
+  slide: Slide,
+  album: Album,
+  channelProfile: ChannelProfile,
+): Promise<Blob> {
+  const { width, height } = album.canvasDimensions;
+  const layers = await buildSlideLayers(slide, album, channelProfile, 0);
   const psd: Psd = { width, height, children: layers };
+  const buffer = writePsd(psd);
+  return new Blob([buffer], { type: 'application/vnd.adobe.photoshop' });
+}
+
+/**
+ * Export ALL slides as artboards in a single PSD file.
+ * Each slide becomes a Photoshop artboard, laid out horizontally.
+ */
+export async function exportAlbumAsPsd(
+  album: Album,
+  channelProfile: ChannelProfile,
+  onProgress?: (current: number, total: number) => void,
+): Promise<Blob> {
+  const { width, height } = album.canvasDimensions;
+  const GAP = 100; // px between artboards
+  const totalWidth = album.slides.length * width + (album.slides.length - 1) * GAP;
+
+  const artboards: Layer[] = [];
+
+  for (let i = 0; i < album.slides.length; i++) {
+    if (onProgress) onProgress(i + 1, album.slides.length);
+    const slide = album.slides[i];
+    const offsetX = i * (width + GAP);
+
+    // Build child layers for this artboard
+    const childLayers = await buildSlideLayers(slide, album, channelProfile, offsetX);
+
+    // Wrap as an artboard group
+    const artboardGroup: Layer = {
+      name: `شريحة ${slide.number}`,
+      children: childLayers,
+      opened: true,
+      artboard: {
+        rect: {
+          top: 0,
+          left: offsetX,
+          bottom: height,
+          right: offsetX + width,
+        },
+        presetName: album.canvasDimensions.presetName,
+        backgroundType: 1, // white
+      },
+    };
+
+    artboards.push(artboardGroup);
+  }
+
+  const psd: Psd = {
+    width: totalWidth,
+    height,
+    children: artboards,
+    artboards: {
+      count: album.slides.length,
+      autoExpandEnabled: false,
+      origin: { horizontal: 0, vertical: 0 },
+      autoExpandOffset: { horizontal: 0, vertical: 0 },
+      autoNestEnabled: false,
+      autoPositionEnabled: false,
+    },
+  };
+
   const buffer = writePsd(psd);
   return new Blob([buffer], { type: 'application/vnd.adobe.photoshop' });
 }
