@@ -61,10 +61,11 @@ export function EditorClient({ albumId }: { albumId: string }) {
   }, [albumId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (album?.id === albumId && album.slides.length > 0 && !selectedSlideId) {
+    if (album?.id === albumId && album.slides.length > 0) {
+      // Always select first slide when album loads
       setSelectedSlide(album.slides[0].id);
     }
-  }, [album, albumId, selectedSlideId, setSelectedSlide]);
+  }, [album?.id, albumId, setSelectedSlide]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedSlide = album?.slides.find((s) => s.id === selectedSlideId) ?? null;
 
