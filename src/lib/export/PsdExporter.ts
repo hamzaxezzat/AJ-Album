@@ -209,20 +209,26 @@ function buildTextLayer(
 
   const textData: LayerTextData = {
     text: psText,
-    transform: [1, 0, 0, 1, 0, 0],
+    // Transform [scaleX, shearY, shearX, scaleY, translateX, translateY]
+    // Position the text box at (x, y) in PSD coordinates
+    transform: [1, 0, 0, 1, x, y],
     antiAlias: 'sharp',
     style: textStyle,
     styleRuns: [{ length: psText.length, style: textStyle }],
     paragraphStyle,
     paragraphStyleRuns: [{ length: psText.length, style: paragraphStyle }],
     shapeType: 'box',
+    // boxBounds relative to transform origin: [top, left, bottom, right]
     boxBounds: [0, 0, h, w],
   };
 
   return {
     name,
+    // Layer bounds must match text position for Photoshop
     left: x,
     top: y,
+    right: x + w,
+    bottom: y + h,
     canvas,
     text: textData,
     hidden,
