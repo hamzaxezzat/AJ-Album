@@ -223,6 +223,16 @@ export function EditorClient({ albumId }: { albumId: string }) {
             تصدير PNG
           </button>
 
+          {/* Export slide PSD */}
+          <button type="button" onClick={exportActions.handleExportPsd} disabled={exportActions.isExporting} style={{
+            background: '#21262d', color: '#e6edf3', border: '1px solid #30363d',
+            borderRadius: 5, padding: '6px 14px', fontSize: 13, cursor: 'pointer',
+            fontFamily: 'var(--brand-font-family)',
+            opacity: exportActions.isExporting ? 0.5 : 1,
+          }}>
+            تصدير PSD
+          </button>
+
           {/* Export album ZIP */}
           <button type="button" onClick={exportActions.handleExportAlbum} disabled={exportActions.isExporting} style={{
             background: '#D32F2F', color: '#fff', border: 'none',

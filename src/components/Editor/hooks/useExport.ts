@@ -2,7 +2,7 @@
 import { useCallback, useState } from 'react';
 import type { Album, Slide, ChannelProfile } from '@/types/album';
 import { GuardrailEngine } from '@/lib/guardrails';
-import { ZipExporter } from '@/lib/export';
+import { ZipExporter, exportSlideToPsd } from '@/lib/export';
 import type { ExportProgress } from '@/lib/export';
 
 interface UseExportOptions {
@@ -129,10 +129,38 @@ export function useExport({ album, selectedSlide, channelProfile }: UseExportOpt
     }
   }, [album, channelProfile]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /** Export the currently selected slide as PSD (client-side, no export service needed) */
+  const handleExportPsd = useCallback(async () => {
+    if (!selectedSlide || !album) return;
+
+    setState(s => ({ ...s, isExporting: true, exportError: null }));
+
+    try {
+      const blob = await exportSlideToPsd(selectedSlide, album, channelProfile);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const num = String(selectedSlide.number).padStart(2, '0');
+      a.download = `${album.title}-${num}.psd`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setState(s => ({
+        ...s,
+        exportError: `فشل تصدير PSD: ${err instanceof Error ? err.message : String(err)}`,
+      }));
+    } finally {
+      setState(s => ({ ...s, isExporting: false }));
+    }
+  }, [selectedSlide, album, channelProfile]);
+
   return {
     ...state,
     handleExportSlide,
     handleExportAlbum,
+    handleExportPsd,
     clearExportError,
   };
 }
