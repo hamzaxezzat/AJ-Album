@@ -9,6 +9,38 @@ import { LAYOUT } from '../../../../config/defaults';
 
 type ReplaceMode = 'current' | 'all';
 
+function extractText(content: unknown): string {
+  if (!content || typeof content !== 'object') return '';
+  const doc = content as { content?: Array<{ content?: Array<{ text?: string }> }> };
+  if (!doc.content) return '';
+  const lines: string[] = [];
+  for (const node of doc.content) {
+    const parts: string[] = [];
+    if (node.content) {
+      for (const child of node.content) {
+        if (child.text) parts.push(child.text);
+      }
+    }
+    lines.push(parts.join(''));
+  }
+  return lines.join('\n').trim();
+}
+
+function slideToText(slide: Slide): string {
+  const titleBlock = slide.blocks.find(b => b.type === 'main_title');
+  const bodyBlock = slide.blocks.find(b => b.type === 'body_paragraph');
+  const title = titleBlock ? extractText((titleBlock as MainTitleBlock).content) : '';
+  const body = bodyBlock ? extractText((bodyBlock as BodyParagraphBlock).content) : '';
+  return body ? `${title}\n${body}` : title;
+}
+
+function albumToScript(album: Album): string {
+  return album.slides.map((slide, i) => {
+    const content = slideToText(slide);
+    return `${i + 1}\n${content}`;
+  }).join('\n\n');
+}
+
 interface ReplaceContentDialogProps {
   album: Album;
   selectedSlide: Slide;
@@ -17,7 +49,7 @@ interface ReplaceContentDialogProps {
 
 export function ReplaceContentDialog({ album, selectedSlide, onClose }: ReplaceContentDialogProps) {
   const [mode, setMode] = useState<ReplaceMode>('current');
-  const [text, setText] = useState('');
+  const [text, setText] = useState(() => slideToText(selectedSlide));
   const [preview, setPreview] = useState<{ title: string; body: string }[] | null>(null);
 
   const updateSlide = useDocumentStore(s => s.updateSlide);
@@ -127,10 +159,10 @@ export function ReplaceContentDialog({ album, selectedSlide, onClose }: ReplaceC
 
         {/* Mode toggle */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
-          <button type="button" onClick={() => { setMode('current'); setPreview(null); }} style={toggle(mode === 'current')}>
+          <button type="button" onClick={() => { setMode('current'); setText(slideToText(selectedSlide)); setPreview(null); }} style={toggle(mode === 'current')}>
             الشريحة الحالية ({selectedSlide.number})
           </button>
-          <button type="button" onClick={() => { setMode('all'); setPreview(null); }} style={toggle(mode === 'all')}>
+          <button type="button" onClick={() => { setMode('all'); setText(albumToScript(album)); setPreview(null); }} style={toggle(mode === 'all')}>
             جميع الشرائح
           </button>
         </div>
