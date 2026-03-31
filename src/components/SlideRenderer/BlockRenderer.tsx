@@ -62,8 +62,11 @@ function nodeToHtml(node: DocNode): string {
             case 'underline':
               html = `<u>${html}</u>`;
               break;
-            case 'highlight':
-              html = `<mark style="background-color:${mark.attrs?.color ?? 'inherit'};color:inherit;padding:0 0.1em">${html}</mark>`;
+            case 'highlight': {
+              const rawColor = mark.attrs?.color ?? 'inherit';
+              const bgColor = rawColor === 'accent' ? 'var(--accent-primary-highlight)' : rawColor;
+              html = `<mark style="background-color:${bgColor};color:inherit;padding:0.05em 0.15em;border-radius:2px">${html}</mark>`;
+            }
               break;
             case 'lang': {
               // Mixed-direction inline run

@@ -24,6 +24,7 @@ const TEXT_COLORS = [
 ];
 
 const HIGHLIGHT_COLORS = [
+  { label: 'لون الثيم', hex: 'accent' },
   { label: 'أصفر', hex: '#FFF176' },
   { label: 'أحمر', hex: '#FFCDD2' },
   { label: 'أخضر', hex: '#C8E6C9' },
@@ -248,8 +249,8 @@ function ColorDot({
       style={{
         width: 22, height: 22,
         borderRadius: isHighlight ? 4 : '50%',
-        background: hex === 'transparent' ? '#1c2128' : hex,
-        border: `2px solid ${active ? '#ef5350' : (hex === '#FFFFFF' || hex === 'transparent' ? '#555' : hex)}`,
+        background: hex === 'transparent' ? '#1c2128' : hex === 'accent' ? 'var(--accent-primary, #D32F2F)' : hex,
+        border: `2px solid ${active ? '#ef5350' : (hex === '#FFFFFF' || hex === 'transparent' ? '#555' : hex === 'accent' ? 'var(--accent-primary, #D32F2F)' : hex)}`,
         cursor: 'pointer',
         padding: 0,
         flexShrink: 0,

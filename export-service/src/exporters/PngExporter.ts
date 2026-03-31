@@ -119,6 +119,7 @@ function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): stri
   const slideOverrides = (slide as any).themeOverrides ?? {};
   const effectiveTheme = { ...theme, ...slideOverrides };
   const accentColor = effectiveTheme.primaryColor ?? '#D32F2F';
+  _exportAccentColor = accentColor; // make available to renderNodes for highlight resolution
   const titleColor = effectiveTheme.titleColor ?? accentColor;
   const bodyColor = effectiveTheme.bodyColor ?? '#1A1A1A';
 
@@ -374,6 +375,8 @@ function generateSlideHtml(slide: Slide, album: Album, ctx: ExportContext): stri
 
 // ─── Helpers ─────────────────────────────────────────────────
 
+let _exportAccentColor = '#D32F2F';
+
 function renderRichContent(content: RichNode | string | undefined | null): string {
   if (!content) return '';
   if (typeof content === 'string') return escapeHtml(content);
@@ -392,9 +395,12 @@ function renderNodes(nodes: RichNode[]): string {
             case 'italic': html = `<em>${html}</em>`; break;
             case 'strike': html = `<s>${html}</s>`; break;
             case 'underline': html = `<u>${html}</u>`; break;
-            case 'highlight':
-              html = `<mark style="background:${escapeHtml(mark.attrs?.color ?? '#FFEB3B')};padding:2px 4px;">${html}</mark>`;
+            case 'highlight': {
+              const hlRaw = mark.attrs?.color ?? '#FFEB3B';
+              const hlColor = hlRaw === 'accent' ? (_exportAccentColor + '33') : hlRaw;
+              html = `<mark style="background:${escapeHtml(hlColor)};padding:2px 4px;border-radius:2px;">${html}</mark>`;
               break;
+            }
             case 'textStyle':
               if (mark.attrs?.color) html = `<span style="color:${escapeHtml(mark.attrs.color)}">${html}</span>`;
               break;

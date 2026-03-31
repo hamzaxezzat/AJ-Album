@@ -7,6 +7,7 @@ import type {
   Slide,
   RichTextContent,
 } from '@/types/album';
+import { applySmartStyle } from '@/lib/textAnalysis/smartStyle';
 
 /**
  * Parses any Arabic script into slides — no numbering required.
@@ -219,7 +220,7 @@ export function parsedSlideToSlide(parsed: ParsedSlide, albumTheme: AlbumTheme):
         zIndex: 10,
         visible: true,
         typographyTokenRef: 'heading-l',
-        content: textToRichText(parsed.title),
+        content: applySmartStyle(parsed.title, { isTitle: true }),
       },
       {
         id: nanoid(),
@@ -230,7 +231,7 @@ export function parsedSlideToSlide(parsed: ParsedSlide, albumTheme: AlbumTheme):
         visible: true,
         typographyTokenRef: 'body-m',
         kashidaEnabled: true,
-        content: textToRichText(parsed.body),
+        content: applySmartStyle(parsed.body),
       },
     ],
     image: {

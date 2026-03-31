@@ -85,6 +85,7 @@ export function tokensToCssVars(tokens: ResolvedTokens): Record<string, string> 
   return {
     '--accent-primary': tokens.accentPrimary,
     '--accent-secondary': tokens.accentSecondary ?? tokens.accentPrimary,
+    '--accent-primary-highlight': tokens.accentPrimary + '33',
     '--text-on-accent': tokens.textOnAccent,
     '--background': tokens.background,
     '--text-primary': tokens.textPrimary,
