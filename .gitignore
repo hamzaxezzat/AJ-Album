@@ -49,3 +49,4 @@ next-env.d.ts
 
 # reference images (large files, not needed in repo)
 Album-References/
+.env.local
