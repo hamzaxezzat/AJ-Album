@@ -7,7 +7,7 @@ import type { RichTextContent } from '@/types/album';
 
 interface Segment {
   text: string;
-  style: 'regular' | 'bold' | 'highlight' | 'italic';
+  style: 'regular' | 'bold' | 'highlight' | 'italic' | 'bold_highlight';
 }
 
 interface AnalysisResult {
@@ -20,6 +20,10 @@ function segmentsToDocNode(segments: Segment[]) {
     if (seg.style === 'bold') marks.push({ type: 'bold' });
     if (seg.style === 'highlight') marks.push({ type: 'highlight', attrs: { color: 'accent' } });
     if (seg.style === 'italic') marks.push({ type: 'italic' });
+    if (seg.style === 'bold_highlight') {
+      marks.push({ type: 'bold' });
+      marks.push({ type: 'highlight', attrs: { color: 'accent' } });
+    }
 
     return marks.length > 0
       ? { type: 'text' as const, text: seg.text, marks }

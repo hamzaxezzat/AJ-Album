@@ -15,7 +15,7 @@ const channelProfile = ajMainRaw as unknown as ChannelProfile;
 
 // ─── AI slide types ──────────────────────────────────────────
 
-interface AISegment { text: string; style: 'regular' | 'bold' | 'highlight' | 'italic' }
+interface AISegment { text: string; style: 'regular' | 'bold' | 'highlight' | 'italic' | 'bold_highlight' }
 interface AISlide {
   number: number;
   role: 'cover' | 'inner';
@@ -35,6 +35,10 @@ function segmentsToRichText(segments: AISegment[]): RichTextContent {
     if (seg.style === 'bold') marks.push({ type: 'bold' });
     if (seg.style === 'highlight') marks.push({ type: 'highlight', attrs: { color: 'accent' } });
     if (seg.style === 'italic') marks.push({ type: 'italic' });
+    if (seg.style === 'bold_highlight') {
+      marks.push({ type: 'bold' });
+      marks.push({ type: 'highlight', attrs: { color: 'accent' } });
+    }
     return marks.length > 0
       ? { type: 'text' as const, text: seg.text, marks }
       : { type: 'text' as const, text: seg.text };
