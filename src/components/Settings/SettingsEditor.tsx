@@ -370,6 +370,15 @@ function SettingsPanel({ theme, onUpdate, onSave, onLoadTheme, onDeleteTheme, sa
 
       <div style={DIVIDER} />
 
+      {/* ═══════════════ الفوتر ═══════════════ */}
+      <h3 style={SECTION_TITLE}>صور الفوتر</h3>
+
+      <FooterImageUpload side="left" label="الجانب الأيسر (Social Handles)" />
+      <div style={{ height: 8 }} />
+      <FooterImageUpload side="right" label="الجانب الأيمن (اختياري)" />
+
+      <div style={DIVIDER} />
+
       {/* ═══════════════ حفظ الثيم ═══════════════ */}
       <h3 style={SECTION_TITLE}>حفظ كثيم</h3>
 
@@ -408,6 +417,76 @@ function SettingsPanel({ theme, onUpdate, onSave, onLoadTheme, onDeleteTheme, sa
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Footer image upload ─────────────────────────────────────
+
+const FOOTER_IMG_KEYS = { left: 'aj-footer-left', right: 'aj-footer-right' };
+
+export function getFooterImage(side: 'left' | 'right'): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(FOOTER_IMG_KEYS[side]);
+}
+
+function FooterImageUpload({ side, label }: { side: 'left' | 'right'; label: string }) {
+  const [image, setImage] = useState<string | null>(() => getFooterImage(side));
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      if (dataUrl) {
+        localStorage.setItem(FOOTER_IMG_KEYS[side], dataUrl);
+        setImage(dataUrl);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleRemove = () => {
+    localStorage.removeItem(FOOTER_IMG_KEYS[side]);
+    setImage(null);
+  };
+
+  return (
+    <div>
+      <label style={{ ...LABEL, marginBottom: 6 }}>{label}</label>
+      {image ? (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: 8, background: '#0d1117', borderRadius: 6, border: '1px solid #21262d',
+        }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={image} alt="" style={{ height: 36, width: 'auto', borderRadius: 3, background: '#fff' }} />
+          <div style={{ flex: 1 }}>
+            <span style={{ fontSize: 11, color: '#4CAF50' }}>تم الرفع</span>
+          </div>
+          <button type="button" onClick={() => fileRef.current?.click()}
+            style={{ padding: '4px 8px', fontSize: 11, borderRadius: 4, background: '#21262d', color: '#8b949e', border: '1px solid #30363d', cursor: 'pointer' }}>
+            استبدال
+          </button>
+          <button type="button" onClick={handleRemove}
+            style={{ padding: '4px 8px', fontSize: 11, borderRadius: 4, background: 'none', color: '#f85149', border: '1px solid rgba(244,67,54,0.3)', cursor: 'pointer' }}>
+            حذف
+          </button>
+        </div>
+      ) : (
+        <button type="button" onClick={() => fileRef.current?.click()}
+          style={{
+            width: '100%', padding: 12, background: '#0d1117', border: '1px dashed #30363d',
+            borderRadius: 6, color: '#484f58', fontSize: 12, cursor: 'pointer',
+            fontFamily: 'var(--brand-font-family)',
+          }}>
+          + رفع صورة الفوتر
+        </button>
+      )}
+      <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
     </div>
   );
 }

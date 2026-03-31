@@ -5,7 +5,7 @@
 //   Left (RTL end): Social handles with platform icons — image or rendered
 //   Right (RTL start): Pagination dots OR source reference text
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ChannelProfile, ResolvedTokens } from '@/types/album';
 
 interface FooterChromeProps {
@@ -34,8 +34,17 @@ export function FooterChrome({
   const footer = channelProfile.footer;
   const handles = footer.socialHandles ?? [];
   const footerHeight = footer.height ?? 0.074;
-  const leftImage = (footer as unknown as Record<string, unknown>).leftImage as string | undefined;
-  const dotSize = Math.round(tokens.canvasWidth * 0.008); // ~8.6px on 1080
+  const profileLeftImage = (footer as unknown as Record<string, unknown>).leftImage as string | undefined;
+  const dotSize = Math.round(tokens.canvasWidth * 0.008);
+
+  // Check localStorage for uploaded footer images (from /settings page)
+  const [customLeftImage, setCustomLeftImage] = useState<string | null>(null);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setCustomLeftImage(localStorage.getItem('aj-footer-left'));
+    }
+  }, []);
+  const leftImage = customLeftImage || profileLeftImage; // ~8.6px on 1080
 
   return (
     <div
