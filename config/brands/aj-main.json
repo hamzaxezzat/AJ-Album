@@ -60,7 +60,9 @@
     ],
     "paginationPosition": "left",
     "backgroundColor": "#FFFFFF",
-    "textColor": "#212121"
+    "textColor": "#212121",
+    "leftImage": "/logos/aj-main/footer-social.png",
+    "rightImage": "/logos/aj-main/footer-dots.png"
   },
   "sourceStyle": {
     "position": "bottom-right",

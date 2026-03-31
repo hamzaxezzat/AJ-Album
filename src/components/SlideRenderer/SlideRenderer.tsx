@@ -145,6 +145,7 @@ export function SlideRenderer({
         tokens={tokens}
         currentSlideNumber={slide.number}
         totalSlides={album.slides.length}
+        sourceText={slide.source?.visible ? slide.source.text : undefined}
       />
     </div>
   );
