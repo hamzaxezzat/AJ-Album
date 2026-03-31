@@ -3,6 +3,8 @@ import { useState } from 'react';
 import type { Slide, MainTitleBlock, BodyParagraphBlock, RichTextContent, BlockStyleOverride } from '@/types/album';
 import { RichTextEditor } from '../RichTextEditor';
 import { toBulletList, toOrderedList, toPlainParagraphs, splitBySentences } from '../lib/textReformat';
+import { extractPlainText } from '@/lib/textAnalysis/extractText';
+import { applyAIStyle } from '@/lib/textAnalysis/aiStyle';
 import { LABEL_STYLE, toggleBtnStyle } from './styles';
 
 // ─── Font size presets (canvas px at 1080×1350) ─────────────
@@ -45,6 +47,7 @@ export function TextSection({ slide, onUpdateTitle, onUpdateBody, onUpdateBlockS
 
   // Track resetKey to force RichTextEditor re-sync after reformats
   const [bodyResetKey, setBodyResetKey] = useState(0);
+  const [aiLoading, setAiLoading] = useState(false);
 
   const handleReformat = (transform: (c: RichTextContent) => RichTextContent) => {
     if (!bodyBlock?.content) return;
@@ -142,6 +145,35 @@ export function TextSection({ slide, onUpdateTitle, onUpdateBody, onUpdateBlockS
                 {r.label}
               </button>
             ))}
+
+            {/* AI Smart Styling */}
+            <button
+              type="button"
+              disabled={aiLoading}
+              onClick={async () => {
+                if (!bodyBlock?.content) return;
+                setAiLoading(true);
+                try {
+                  const plain = extractPlainText(bodyBlock.content);
+                  if (!plain.trim()) return;
+                  const styled = await applyAIStyle(plain);
+                  onUpdateBody(styled);
+                  setBodyResetKey(k => k + 1);
+                } finally {
+                  setAiLoading(false);
+                }
+              }}
+              style={{
+                padding: '4px 10px', borderRadius: 4, fontSize: 11, cursor: aiLoading ? 'wait' : 'pointer',
+                fontFamily: 'var(--brand-font-family)',
+                background: aiLoading ? '#21262d' : '#D32F2F',
+                color: '#fff',
+                border: 'none',
+                opacity: aiLoading ? 0.6 : 1,
+              }}
+            >
+              {aiLoading ? 'جاري التحليل...' : '✨ تنسيق ذكي'}
+            </button>
           </div>
         </div>
       </div>
